@@ -126,6 +126,11 @@ public:
 	    return _baro;
     }
 
+	// fill in a quaternion based on current DCM matrix (28/03/03-Menno)
+    void get_quaternion(Quaternion &q) const { 
+        q.from_rotation_matrix(get_dcm_matrix()); 
+    }
+	
     // accelerometer values in the earth frame in m/s/s
     const Vector3f &get_accel_ef(void) const { return _accel_ef; }
 
