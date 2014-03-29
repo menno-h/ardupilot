@@ -76,9 +76,6 @@ AP_AHRS_DCM::update(void)
 
     // Calculate pitch, roll, yaw for stabilization and navigation
     euler_angles();
-
-    // update trig values including _cos_roll, cos_pitch
-    update_trig();
 }
 
 // update the DCM matrix using only the gyros
@@ -134,6 +131,7 @@ AP_AHRS_DCM::check_matrix(void)
 {
     if (_dcm_matrix.is_nan()) {
         //Serial.printf("ERROR: DCM matrix NAN\n");
+        renorm_blowup_count++;
         reset(true);
         return;
     }
@@ -144,6 +142,7 @@ AP_AHRS_DCM::check_matrix(void)
     if (!(_dcm_matrix.c.x < 1.0f &&
           _dcm_matrix.c.x > -1.0f)) {
         // We have an invalid matrix. Force a normalisation.
+        renorm_range_count++;
         normalize();
 
         if (_dcm_matrix.is_nan() ||
@@ -152,6 +151,7 @@ AP_AHRS_DCM::check_matrix(void)
             // in real trouble. All we can do is reset
             //Serial.printf("ERROR: DCM matrix error. _dcm_matrix.c.x=%f\n",
             //	   _dcm_matrix.c.x);
+            renorm_blowup_count++;
             reset(true);
         }
     }
@@ -190,6 +190,7 @@ AP_AHRS_DCM::renorm(Vector3f const &a, Vector3f &result)
 
     if (!(renorm_val < 2.0f && renorm_val > 0.5f)) {
         // this is larger than it should get - log it as a warning
+        renorm_range_count++;
         if (!(renorm_val < 1.0e6f && renorm_val > 1.0e-6f)) {
             // we are getting values which are way out of
             // range, we will reset the matrix and hope we
@@ -197,6 +198,7 @@ AP_AHRS_DCM::renorm(Vector3f const &a, Vector3f &result)
             // correction before we hit the ground!
             //Serial.printf("ERROR: DCM renormalisation error. renorm_val=%f\n",
             //	   renorm_val);
+            renorm_blowup_count++;
             return false;
         }
     }
@@ -278,24 +280,6 @@ AP_AHRS_DCM::_P_gain(float spin_rate)
     }
     return spin_rate/ToRad(50);
 }
-
-// _yaw_gain reduces the gain of the PI controller applied to heading errors
-// when observability from change of velocity is good (eg changing speed or turning)
-// This reduces unwanted roll and pitch coupling due to compass errors for planes.
-// High levels of noise on _accel_ef will cause the gain to drop and could lead to 
-// increased heading drift during straight and level flight, however some gain is
-// always available. TODO check the necessity of adding adjustable acc threshold 
-// and/or filtering accelerations before getting magnitude
-float
-AP_AHRS_DCM::_yaw_gain(Vector3f VdotEF)
-{
-    float VdotEFmag = sqrtf(sq(_accel_ef.x) + sq(_accel_ef.y));
-    if (VdotEFmag <= 4.0f) {
-        return 0.2f*(4.5f - VdotEFmag);
-    }
-    return 0.1f;
-}
-
 
 // return true if we have and should use GPS
 bool AP_AHRS_DCM::have_gps(void) const
@@ -435,11 +419,8 @@ AP_AHRS_DCM::drift_correction_yaw(void)
     // yaw back to the right value. We use a gain
     // that depends on the spin rate. See the fastRotations.pdf
     // paper from Bill Premerlani
-    // We also adjust the gain depending on the rate of change of horizontal velocity which
-    // is proportional to how observable the heading is from the acceerations and GPS velocity
-    // The accelration derived heading will be more reliable in turns than compass or GPS
 
-    _omega_yaw_P.z = error_z * _P_gain(spin_rate) * _kp_yaw * _yaw_gain(_accel_ef);
+    _omega_yaw_P.z = error_z * _P_gain(spin_rate) * _kp_yaw;
     if (_flags.fast_ground_gains) {
         _omega_yaw_P.z *= 8;
     }
@@ -742,16 +723,20 @@ AP_AHRS_DCM::drift_correction(float deltat)
 
     // remember the velocity for next time
     _last_velocity = velocity;
+
+    if (_have_gps_lock && _flags.fly_forward) {
+        // update wind estimate
+        estimate_wind(velocity);
+    }
 }
 
 
 // update our wind speed estimate
-void AP_AHRS_DCM::estimate_wind(void)
+void AP_AHRS_DCM::estimate_wind(Vector3f &velocity)
 {
     if (!_flags.wind_estimation) {
         return;
     }
-    const Vector3f &velocity = _last_velocity;
 
     // this is based on the wind speed estimation code from MatrixPilot by
     // Bill Premerlani. Adaption for ArduPilot by Jon Challinger
@@ -861,14 +846,13 @@ float AP_AHRS_DCM::get_error_yaw(void)
 // dead-reckoning or GPS
 bool AP_AHRS_DCM::get_position(struct Location &loc)
 {
+    if (!_have_position) {
+        return false;
+    }
     loc.lat = _last_lat;
     loc.lng = _last_lng;
-    loc.alt = _baro.get_altitude() * 100 + _home.alt;
     location_offset(loc, _position_offset_north, _position_offset_east);
-    if (_flags.fly_forward && _have_position) {
-        location_update(loc, degrees(yaw), _gps->ground_speed_cm * 0.01 * _gps->get_lag());
-    }
-    return _have_position;
+    return true;
 }
 
 // return an airspeed estimate if available
@@ -902,11 +886,3 @@ bool AP_AHRS_DCM::airspeed_estimate(float *airspeed_ret)
 	}
 	return ret;
 }
-
-void AP_AHRS_DCM::set_home(int32_t lat, int32_t lng, int32_t alt_cm)
-{
-    _home.lat = lat;
-    _home.lng = lng;
-    _home.alt = alt_cm;
-}
-
