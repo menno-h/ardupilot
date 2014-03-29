@@ -553,6 +553,7 @@ float inverse_actual_quaternion[4];
 float rotate_quaternion[4];
 float rotate_quaternion_bis[4];
 float error_quaternion[4];
+Quaternion dcm_quaternion; // (29/03/2014-Menno)
 
 #define CRUISE_IN_2D_ENABLED DISABLED          // (05/03/2014-Menno) // set to enable to make yaw and roll targets zero (not taking turns)
 

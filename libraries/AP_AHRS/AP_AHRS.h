@@ -145,6 +145,11 @@ public:
     // return a DCM rotation matrix representing our current
     // attitude
     virtual const Matrix3f &get_dcm_matrix(void) const = 0;
+	
+	// fill in a quaternion based on current DCM matrix 
+    void get_quaternion(Quaternion &q) const { 
+        q.from_rotation_matrix(get_dcm_matrix()); 
+    } 
 
     // get our current position, either from GPS or via
     // dead-reckoning. Return true if a position is available,

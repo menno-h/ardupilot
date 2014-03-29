@@ -144,7 +144,8 @@ get_stabilize_quaternion(void)
   float current_roll_radians = DEG_TO_RAD*ahrs.roll_sensor/100;
   float current_pitch_radians = DEG_TO_RAD*ahrs.pitch_sensor/100;
   float current_yaw_radians = DEG_TO_RAD*ahrs.yaw_sensor/100;
- 
+  
+  ahrs.get_quaternion(dcm_quaternion); // (29/03/2014-Menno)
   to_quaternion(current_roll_radians,current_pitch_radians,current_yaw_radians, actual_quaternion);
   
   // quaternion error
