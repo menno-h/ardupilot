@@ -420,10 +420,10 @@ static void NOINLINE send_servo_out(mavlink_channel_t chan)
         chan,
         millis(),
         0,         // port 0
-        menno4, // variable 1
-        menno5, // variable 2
-        menno6, // variable 3
-        menno7, // variable 4
+        menno1, // variable 1
+        menno2, // variable 2
+        menno3, // variable 3
+        menno4, // variable 4
         0,
         0,
         0,
@@ -494,13 +494,13 @@ static void NOINLINE send_raw_imu1(mavlink_channel_t chan)
     const Vector3f &mag = compass.get_field();
     mavlink_msg_raw_imu_send(
         chan,
-        micros(),
-        menno4,    // (25/03/2014-Menno) // replaced radio in ch6-8 by user variables // TODO: delete
+        micros(),    // (25/03/2014-Menno) // replaced radio in ch6-8 by user variables // TODO: delete
         menno5,
         menno6,
         menno7,
         menno8,
         menno9,
+        menno10,
 //        accel.x * 1000.0f / GRAVITY_MSS,
 //        accel.y * 1000.0f / GRAVITY_MSS,
 //        accel.z * 1000.0f / GRAVITY_MSS,

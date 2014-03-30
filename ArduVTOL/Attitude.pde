@@ -146,6 +146,10 @@ get_stabilize_quaternion(void)
   float current_yaw_radians = DEG_TO_RAD*ahrs.yaw_sensor/100;
   
   ahrs.get_quaternion(actual_quaternion); // (29/03/2014-Menno)
+  menno1 = actual_quaternion[0];
+  menno2 = actual_quaternion[1];
+  menno3 = actual_quaternion[2];
+  menno4 = actual_quaternion[3];
   //to_quaternion(current_roll_radians,current_pitch_radians,current_yaw_radians, actual_quaternion);
   
   // quaternion error
@@ -600,7 +604,7 @@ get_yaw_rate_stabilized_ef(int32_t stick_angle)
 
     // set earth frame targets for rate controller
     set_yaw_rate_target(g.pi_stabilize_yaw.get_p(angle_error)+target_rate, EARTH_FRAME);
-    menno10 = g.pi_stabilize_yaw.get_p(angle_error); // TODO: delete
+    
 }
 
 // set_roll_rate_target - to be called by upper controllers to set roll rate targets in the earth frame
@@ -673,9 +677,9 @@ run_rate_controllers()
     g.rc_2.servo_out = get_rate_pitch(pitch_rate_target_bf);
     g.rc_4.servo_out = get_rate_yaw(yaw_rate_target_bf);
     
-        menno4 = roll_rate_target_bf; // TODO: delete
-        menno5 = pitch_rate_target_bf;
-        menno6 = yaw_rate_target_bf;
+        menno8 = roll_rate_target_bf; // TODO: delete
+        menno9 = pitch_rate_target_bf;
+        menno10 = yaw_rate_target_bf;
         
 #endif
 

@@ -556,16 +556,16 @@ Quaternion error_quaternion;
 
 #define CRUISE_IN_2D_ENABLED DISABLED          // (05/03/2014-Menno) // set to enable to make yaw and roll targets zero (not taking turns)
 
-static int32_t menno1;  //
-static float *menno2;
-static float *menno3;
+static float menno1;  // current quaternion
+static float menno2;
+static float menno3;
 static float menno4;
-static float menno5;
-static float menno6;
-static int32_t menno7=0;
-static int32_t menno8=0;
-static int32_t menno9=0;
-static int32_t menno10=0;
+static int16_t menno5; // control_roll
+static int16_t menno6; // control_pitch
+static int32_t menno7; // control_yaw
+static int32_t menno8; // target_rate_roll
+static int32_t menno9; // target_rate_pitch
+static int32_t menno10;// target_rate_yaw
 
 ////////////////////////////////////////////////////////////////////////////////
 // Orientation
@@ -1056,9 +1056,9 @@ static void fast_loop()
     
     update_yaw_mode();
     update_roll_pitch_mode();
-    menno7 = control_roll; // TODO: delete
-    menno8 = control_pitch;
-    menno9 = control_yaw;
+    menno5 = control_roll; // TODO: delete
+    menno6 = control_pitch;
+    menno7 = control_yaw;
     
     if (control_mode == STABLE_QUAT){ // (11/03/2014-Menno)
       // control_roll, control_pitch, control_yaw where set during update_roll_pitch_mode and update_yaw_mode
