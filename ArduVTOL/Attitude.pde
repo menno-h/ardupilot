@@ -145,8 +145,8 @@ get_stabilize_quaternion(void)
   float current_pitch_radians = DEG_TO_RAD*ahrs.pitch_sensor/100;
   float current_yaw_radians = DEG_TO_RAD*ahrs.yaw_sensor/100;
   
-  ahrs.get_quaternion(dcm_quaternion); // (29/03/2014-Menno)
-  to_quaternion(current_roll_radians,current_pitch_radians,current_yaw_radians, actual_quaternion);
+  ahrs.get_quaternion(actual_quaternion); // (29/03/2014-Menno)
+  //to_quaternion(current_roll_radians,current_pitch_radians,current_yaw_radians, actual_quaternion);
   
   // quaternion error
   quaternion_inverse(actual_quaternion, inverse_actual_quaternion);
@@ -1629,7 +1629,7 @@ static void set_accel_throttle_I_from_pilot_throttle(int16_t pilot_throttle)
 }
 
 
-static void quaternion_multiply(const float* q,const float* r,float* q_mult) {  // (13-03-2014-Menno) // from Matlab
+static void quaternion_multiply(const Quaternion &q,const Quaternion &r,Quaternion &q_mult) {  // (13-03-2014-Menno) // from Matlab
   
   q_mult[0] = r[0]*q[0] - r[1]*q[1] - r[2]*q[2] - r[3]*q[3];
   q_mult[1] = r[0]*q[1] + r[1]*q[0] - r[2]*q[3] + r[3]*q[2];
@@ -1639,7 +1639,7 @@ static void quaternion_multiply(const float* q,const float* r,float* q_mult) {  
   return;
 }
 
-static void quaternion_copy(const float* q_in,float* q_out) {  // (25-03-2014-Menno) 
+static void quaternion_copy(const Quaternion &q_in,Quaternion &q_out) {  // (25-03-2014-Menno) 
 
   q_out[0] = q_in[0]; 
   q_out[1] = q_in[1];
@@ -1649,7 +1649,7 @@ static void quaternion_copy(const float* q_in,float* q_out) {  // (25-03-2014-Me
   return;
 }
 
-static void quaternion_inverse(const float* q,float* q_inv) {  // (13-03-2014-Menno) // fomr Matlab
+static void quaternion_inverse(const Quaternion &q,Quaternion &q_inv) {  // (13-03-2014-Menno) // fomr Matlab
 
   float norm = q[0]*q[0] + q[1]*q[1] + q[2]*q[2] + q[3]*q[3]; // should always be 1
   q_inv[0] = q[0]; 
@@ -1660,7 +1660,7 @@ static void quaternion_inverse(const float* q,float* q_inv) {  // (13-03-2014-Me
   return;
 }
 
-static void to_quaternion(float roll, float pitch, float yaw,float* q)  {  // (13-03-2014-Menno) // from Matlab
+static void to_quaternion(float roll, float pitch, float yaw,Quaternion &q)  {  // (13-03-2014-Menno) // from Matlab
     
     float cr2 = cosf(roll*0.5f);
     float cp2 = cosf(pitch*0.5f);

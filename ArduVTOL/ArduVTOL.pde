@@ -545,15 +545,14 @@ static int16_t control_cruise_curvature;       // (01/03/2014-Menno) // variable
 static int32_t control_cruise_altitude;        // (01/03/2014-Menno) // variable hight (m) in CRUISE flight mode
 static int16_t control_cruise_climb_rate;      // (01/03/2014-Menno) // variable hight speed (m/s) in CRUISE flight mode
 
-float initial_quaternion[4];              // (11/03/2014-Menno) // used as initial reference when entering STABLE_QUAT mode
-float control_quaternion[4];
-float control_quaternion_bis[4];
-float actual_quaternion[4];
-float inverse_actual_quaternion[4];
-float rotate_quaternion[4];
-float rotate_quaternion_bis[4];
-float error_quaternion[4];
-Quaternion dcm_quaternion; // (29/03/2014-Menno)
+Quaternion initial_quaternion;              // (11/03/2014-Menno) // used as initial reference when entering STABLE_QUAT mode
+Quaternion control_quaternion;
+Quaternion control_quaternion_bis;
+Quaternion actual_quaternion;
+Quaternion inverse_actual_quaternion;
+Quaternion rotate_quaternion;
+Quaternion rotate_quaternion_bis;
+Quaternion error_quaternion;
 
 #define CRUISE_IN_2D_ENABLED DISABLED          // (05/03/2014-Menno) // set to enable to make yaw and roll targets zero (not taking turns)
 
