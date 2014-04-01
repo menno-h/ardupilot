@@ -704,7 +704,7 @@
  # define CRUISE_THR           	    THROTTLE_MANUAL
 #endif
 
-// Stabilize_quad Mode // (11/03/2014-Menno)
+// Stabilize_quat Mode // (11/03/2014-Menno)
 #ifndef STABLE_QUAT_RP
  # define STABLE_QUAT_RP            	    ROLL_PITCH_STABLE_QUAT
 #endif
@@ -714,7 +714,7 @@
 #endif
 
 #ifndef STABLE_QUAT_THR
- # define STABLE_QUAT_THR           	    THROTTLE_HOLD
+ # define STABLE_QUAT_THR           	    THROTTLE_MANUAL
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

@@ -102,6 +102,8 @@ public:
         k_param_roll_input_max, // (23/03/2014-Menno)
         k_param_pitch_input_max, // (23/03/2014-Menno)
         k_param_cruise_turning, // (25/03/2014-Menno) // 0 if turning with airplane yaw, 1 if turning with airplane roll
+        
+        k_param_quaternion_alt_hold, // (25/03/2014-Menno)
 
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove
@@ -333,10 +335,13 @@ public:
     AP_Int8         wp_yaw_behavior;            // controls how the autopilot controls yaw during missions
     AP_Int16        angle_max;                  // maximum lean angle of the copter in centi-degrees (both for pitch and roll), this can limit the ROLL_PITCH_ANGLE_MAX
     AP_Int32        angle_rate_max;             // maximum rotation rate in roll/pitch axis requested by angle controller used in stabilize, loiter, rtl, auto flight modes
+    AP_Int8         rc_feel_rp;                 // controls vehicle response to user input with 0 being extremely soft and 100 begin extremely crisp
+    
+    // User parameters
     AP_Int16        roll_input_max;             // roll input range // (23/03/2014-Menno)
     AP_Int16        pitch_input_max;            // pitch input range // (23/03/2014-Menno)
     AP_Int16        cruise_turning;             // (25/03/2014-Menno) // 0 if turning with airplane yaw, 1 if turning with airplane roll
-    AP_Int8         rc_feel_rp;                 // controls vehicle response to user input with 0 being extremely soft and 100 begin extremely crisp
+    AP_Int8         quaternion_alt_hold;        // (01/04/2014-Menno) // 0 if no altitude hold, 1 if altitude hold is on // can only be changed if you leave the flightmode and then go back to that flightmode
     
     // Waypoints
     //

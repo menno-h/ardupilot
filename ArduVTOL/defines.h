@@ -133,7 +133,7 @@
 #define DRIFT 11                        // DRIFT mode (Note: 12 is no longer used)
 #define SPORT 13                        // earth frame rate control
 #define CRUISE 14		        // horizontal flight mode // (26/02/2014-Menno)
-#define STABLE_QUAT 15                // stabilize flight mode based on quaternions // (11/03/2014-Menno)
+#define STABLE_QUAT 15                  // stabilize flight mode based on quaternions // (11/03/2014-Menno)
 #define NUM_MODES 16
 
 

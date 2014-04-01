@@ -509,7 +509,12 @@ static bool set_mode(uint8_t mode)
                 success = true;
                 set_yaw_mode(CRUISE_YAW);
                 set_roll_pitch_mode(CRUISE_RP);
-                set_throttle_mode(CRUISE_THR);
+                if (g.quaternion_alt_hold == 1) {
+                set_throttle_mode(THROTTLE_HOLD);  
+                }
+                else {
+                set_throttle_mode(THROTTLE_MANUAL);
+                }
                 set_nav_mode(NAV_NONE);
                 
                 control_cruise_climb_rate = 0;            // (1/03/2014-Menno)  
@@ -523,14 +528,19 @@ static bool set_mode(uint8_t mode)
             success = true;
             set_yaw_mode(STABLE_QUAT_YAW);
             set_roll_pitch_mode(STABLE_QUAT_RP);
-            set_throttle_mode(STABLE_QUAT_THR);
+            if (g.quaternion_alt_hold == 1) {
+            set_throttle_mode(THROTTLE_HOLD);  
+            }
+            else {
+            set_throttle_mode(THROTTLE_MANUAL);
+            }
             set_nav_mode(NAV_NONE);
+            // set initial quaternion            
+            to_quaternion(0, 0, 0, initial_quaternion);
             // set starting controls
             control_roll = 0; // cd 
             control_pitch = 0; // cd
             control_yaw = ahrs.yaw_sensor; // in cd
-            // set initial quaternion            
-            to_quaternion(0, 0, 0, initial_quaternion);
             break;}
 
         default:

@@ -60,10 +60,12 @@ static void get_pilot_desired_lean_angles(int16_t roll_in, int16_t pitch_in, int
         _scaler_pitch = (float)g.angle_max/(float)g.pitch_input_max;
     }    
 
-    // convert pilot input to lean angle
+    // convert pilot roll input to lean angle
     roll_out = (int16_t)(roll_in_filtered * _scaler_roll);
+    
+    // convert pilot pitch input to lean angle
     pitch_out = (int16_t)(pitch_in_filtered * _scaler_pitch);
-
+    
 }
 
 static void
@@ -142,6 +144,27 @@ get_stabilize_quaternion(void)
   // get current quaternion
   
   ahrs.get_quaternion(actual_quaternion); // (29/03/2014-Menno)
+  
+//  menno1 = actual_quaternion[0]*1000;
+//  menno2 = actual_quaternion[1]*1000;
+//  menno3 = actual_quaternion[2]*1000;
+//  menno4 = actual_quaternion[3]*1000;
+//  
+//  menno7 = ahrs.roll_sensor;
+//  menno8 = ahrs.pitch_sensor;
+//  menno9 = ahrs.yaw_sensor;
+  
+  b2e_dcm = ahrs.get_dcm_matrix(); // body to earth dcm
+  
+//  menno1 = b2e_dcm.a.x*1000000;
+//  menno2 = b2e_dcm.a.y*1000000;
+//  menno3 = b2e_dcm.a.z*1000000;
+//  menno4 = b2e_dcm.b.x*1000000;
+//  menno5 = b2e_dcm.b.y*1000000;
+//  menno6 = b2e_dcm.b.z*1000000;
+//  menno7 = b2e_dcm.c.x*1000000;
+//  menno8 = b2e_dcm.c.y*1000000;
+//  menno9 = b2e_dcm.c.z*1000000;
   
   // quaternion error
   quaternion_inverse(actual_quaternion, inverse_actual_quaternion);
@@ -541,14 +564,14 @@ get_pilot_desired_yaw(int32_t stick_angle)
     control_yaw += target_rate * G_Dt;
     control_yaw = wrap_360_cd(control_yaw);
 
-    // calculate difference between desired heading and current heading
-    angle_error = wrap_180_cd(control_yaw - ahrs.yaw_sensor);
-
-    // limit the maximum overshoot
-    angle_error	= constrain_int32(angle_error, -MAX_YAW_OVERSHOOT, MAX_YAW_OVERSHOOT);
-
-    // update control_yaw to be within max_angle_overshoot of our current heading
-    control_yaw = wrap_360_cd(angle_error + ahrs.yaw_sensor);
+//    // calculate difference between desired heading and current heading // (01/04/2014-Menno) // ahrs.yaw_sensor cannot be used in quaternion control when in plane mode
+//    angle_error = wrap_180_cd(control_yaw - ahrs.yaw_sensor);
+//
+//    // limit the maximum overshoot
+//    angle_error	= constrain_int32(angle_error, -MAX_YAW_OVERSHOOT, MAX_YAW_OVERSHOOT);
+//
+//    // update control_yaw to be within max_angle_overshoot of our current heading
+//    control_yaw = wrap_360_cd(angle_error + ahrs.yaw_sensor);
   
 }
 
@@ -565,14 +588,16 @@ get_yaw_rate_stabilized_ef(int32_t stick_angle)
 
     // convert the input to the desired yaw rate
     control_yaw += target_rate * G_Dt;
+   
     control_yaw = wrap_360_cd(control_yaw);
+   
 
     // calculate difference between desired heading and current heading
     angle_error = wrap_180_cd(control_yaw - ahrs.yaw_sensor);
-
+    
     // limit the maximum overshoot
     angle_error	= constrain_int32(angle_error, -MAX_YAW_OVERSHOOT, MAX_YAW_OVERSHOOT);
-
+    
 #if FRAME_CONFIG == HELI_FRAME
     if (!motors.motor_runup_complete()) {
     	angle_error = 0;
@@ -587,7 +612,6 @@ get_yaw_rate_stabilized_ef(int32_t stick_angle)
     // update control_yaw to be within max_angle_overshoot of our current heading
     control_yaw = wrap_360_cd(angle_error + ahrs.yaw_sensor);
     
-
     // set earth frame targets for rate controller
     set_yaw_rate_target(g.pi_stabilize_yaw.get_p(angle_error)+target_rate, EARTH_FRAME);
     
@@ -1337,7 +1361,7 @@ get_throttle_althold(int32_t target_alt, int16_t min_climb_rate, int16_t max_cli
 
     // calculate altitude error
     alt_error    = target_alt - current_loc.alt;
-
+    
     // check kP to avoid division by zero
     if( g.pi_alt_hold.kP() != 0 ) {
         linear_distance = ALT_HOLD_ACCEL_MAX/(2*g.pi_alt_hold.kP()*g.pi_alt_hold.kP());
@@ -1351,6 +1375,9 @@ get_throttle_althold(int32_t target_alt, int16_t min_climb_rate, int16_t max_cli
     }else{
         desired_rate = 0;
     }
+    // If you plot the graph of desired_rate with respect alt_error it would be 
+    // linear between -2*linear_distance and 2*linear_distance, but
+    // invers quadratic beyond those points
 
     desired_rate = constrain_float(desired_rate, min_climb_rate, max_climb_rate);
 

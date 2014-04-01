@@ -458,6 +458,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range 1000 8000
     // @User: Advanced
     GSCALAR(pitch_input_max, "PITCH_INPUT_MAX",      4500),  // default is ROLL_PITCH_INPUT_MAX, but can be altered in MP // (23/03/2014-Menno)
+    
+    // @Param: QUAT_ALT_HOLD
+    // @DisplayName: Enable quaternion altitude hold
+    // @Description: 0: no altitude hold, but THROTTLE_MANUAL, 1: altitude hold, so THROTTLE_HOLD
+    // @Range 0 1
+    // @User: Advanced
+    GSCALAR(quaternion_alt_hold, "QUAT_ALT_HOLD",      0),  // (01/04/2014-Menno)
 
     // @Param: CRUISE_TURNING
     // @DisplayName: Turning mode for cruise quaternion flight

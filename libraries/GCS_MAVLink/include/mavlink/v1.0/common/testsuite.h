@@ -2687,7 +2687,6 @@ static void mavlink_test_nav_controller_output(uint8_t system_id, uint8_t compon
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 }
 
-
 static void mavlink_test_set_quad_swarm_led_roll_pitch_yaw_thrust(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
 {
 	mavlink_message_t msg;

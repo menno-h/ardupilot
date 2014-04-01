@@ -553,6 +553,7 @@ Quaternion inverse_actual_quaternion;
 Quaternion rotate_quaternion;
 Quaternion rotate_quaternion_bis;
 Quaternion error_quaternion;
+Matrix3f b2e_dcm;
 
 #define CRUISE_IN_2D_ENABLED DISABLED          // (05/03/2014-Menno) // set to enable to make yaw and roll targets zero (not taking turns)
 
@@ -1057,15 +1058,24 @@ static void fast_loop()
     update_yaw_mode();
     update_roll_pitch_mode();
     
-    if (control_mode == STABLE_QUAT){ // (11/03/2014-Menno)
+    menno1 = control_roll;
+    menno2 = control_pitch;
+    menno3 = control_yaw;
+    menno4 = desired_yaw_rate_quaternion;
+    
+    if (control_mode == STABLE_QUAT || control_mode == CRUISE ){ // (11/03/2014-Menno)
       // control_roll, control_pitch, control_yaw where set during update_roll_pitch_mode and update_yaw_mode
-      // now convert the desired rotations to quaternions:
+      // now convert the desired rotations to a quaternion:
       update_quaternion();
     }
-      
+ 
+    menno7 = roll_rate_target_bf;
+    menno8 = pitch_rate_target_bf;
+    menno9 = yaw_rate_target_bf;
+
     // update targets to rate controllers
-    update_rate_contoller_targets();
-    
+    update_rate_contoller_targets(); 
+
 }
 
 // throttle_loop - should be run at 50 hz
@@ -1358,7 +1368,7 @@ bool set_yaw_mode(uint8_t new_yaw_mode)
 
     switch( new_yaw_mode ) {
         case YAW_HOLD:
-            yaw_initialised = true;
+            yaw_initialised = true; 
             break;
         case YAW_ACRO:
             yaw_initialised = true;
@@ -1710,6 +1720,11 @@ void update_roll_pitch_mode(void)
         // pass desired roll, pitch to stabilize attitude controllers
         get_stabilize_roll(control_roll);
         get_stabilize_pitch(control_pitch);
+        
+//        menno1 = g.rc_1.control_in;
+//        menno2 = control_roll;
+//        menno3 = g.rc_1.control_in;
+//        menno4 = control_pitch;
 
         break;
 
@@ -1772,6 +1787,7 @@ void update_roll_pitch_mode(void)
 //        get_cruise_pitch(control_cruise_altitude, control_cruise_climb_rate, climb_rate/100);  // climb_rate is in cm/s but get_cruise_pitch expects climb_rate in m/s
 //        get_cruise_roll(ahrs.yaw_sensor,control_cruise_curvature); // copter roll is airplane yaw
         get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, control_roll, control_pitch);
+        control_pitch = control_pitch - 9000; // for this testing CRUISE the reference is at -9000 pitch angle
         break;
         
     case ROLL_PITCH_STABLE_QUAT:  // (11/03/2014-Menno)
@@ -2150,15 +2166,15 @@ void update_quaternion(void) {
   
   // calculating reference quaternion (control_quaternion)
   
-  // convert to radians
+  // convert from centidegrees to radians
   float rotate_roll_radians = DEG_TO_RAD*control_roll/100;
   float rotate_pitch_radians = DEG_TO_RAD*control_pitch/100;
-  float rotate_yaw_radians = 0;
+  float rotate_yaw_radians = DEG_TO_RAD*control_yaw/100;
   
 //  if (control_pitch <= 6000){
   to_quaternion(rotate_roll_radians, rotate_pitch_radians, rotate_yaw_radians, rotate_quaternion);
 
-  quaternion_multiply(initial_quaternion, rotate_quaternion,control_quaternion);
+  quaternion_multiply(initial_quaternion, rotate_quaternion, control_quaternion);
   
 //}
   
