@@ -556,16 +556,16 @@ Quaternion error_quaternion;
 
 #define CRUISE_IN_2D_ENABLED DISABLED          // (05/03/2014-Menno) // set to enable to make yaw and roll targets zero (not taking turns)
 
-static float menno1;  // current quaternion
+static float menno1;
 static float menno2;
 static float menno3;
 static float menno4;
-static int16_t menno5; // control_roll
-static int16_t menno6; // control_pitch
-static int32_t menno7; // control_yaw
-static int32_t menno8; // target_rate_roll
-static int32_t menno9; // target_rate_pitch
-static int32_t menno10;// target_rate_yaw
+static float menno5;
+static float menno6;
+static float menno7;
+static float menno8;
+static float menno9;
+static float menno10;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Orientation
@@ -1056,9 +1056,6 @@ static void fast_loop()
     
     update_yaw_mode();
     update_roll_pitch_mode();
-    menno5 = control_roll; // TODO: delete
-    menno6 = control_pitch;
-    menno7 = control_yaw;
     
     if (control_mode == STABLE_QUAT){ // (11/03/2014-Menno)
       // control_roll, control_pitch, control_yaw where set during update_roll_pitch_mode and update_yaw_mode
@@ -1068,6 +1065,7 @@ static void fast_loop()
       
     // update targets to rate controllers
     update_rate_contoller_targets();
+    
 }
 
 // throttle_loop - should be run at 50 hz
@@ -2150,18 +2148,18 @@ void update_throttle_mode(void)
 // converts the control_yaw, control_roll, control_pitch into a desired quaternion // (11/03/2014-Menno)
 void update_quaternion(void) {
   
-  // calculating reference quaternion (q_control)
+  // calculating reference quaternion (control_quaternion)
   
   // convert to radians
   float rotate_roll_radians = DEG_TO_RAD*control_roll/100;
   float rotate_pitch_radians = DEG_TO_RAD*control_pitch/100;
-//float rotate_yaw_radians = DEG_TO_RAD*control_yaw/100;
-  float rotate_yaw_radians = DEG_TO_RAD*ahrs.yaw_sensor/100;
+  float rotate_yaw_radians = 0;
   
 //  if (control_pitch <= 6000){
   to_quaternion(rotate_roll_radians, rotate_pitch_radians, rotate_yaw_radians, rotate_quaternion);
 
   quaternion_multiply(initial_quaternion, rotate_quaternion,control_quaternion);
+  
 //}
   
 //  else {
@@ -2181,10 +2179,6 @@ void update_quaternion(void) {
   
   // setting rate targets
   get_stabilize_quaternion();
-  
-//        get_yaw_rate_stabilized_ef(pilot_yaw);
-//        get_stabilize_roll(control_roll);
-//        get_stabilize_pitch(control_pitch);  
   
 }
 

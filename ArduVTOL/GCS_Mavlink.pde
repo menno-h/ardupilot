@@ -495,21 +495,24 @@ static void NOINLINE send_raw_imu1(mavlink_channel_t chan)
     mavlink_msg_raw_imu_send(
         chan,
         micros(),    // (25/03/2014-Menno) // replaced radio in ch6-8 by user variables // TODO: delete
+        menno1,
+        menno2,
+        menno3,
+        menno4,
         menno5,
         menno6,
         menno7,
         menno8,
-        menno9,
-        menno10,
+        menno9);
 //        accel.x * 1000.0f / GRAVITY_MSS,
 //        accel.y * 1000.0f / GRAVITY_MSS,
 //        accel.z * 1000.0f / GRAVITY_MSS,
 //        gyro.x * 1000.0f,
 //        gyro.y * 1000.0f,
 //        gyro.z * 1000.0f,
-        mag.x,
-        mag.y,
-        mag.z);
+//        mag.x,
+//        mag.y,
+//        mag.z);
     if (ins.get_gyro_count() <= 1 &&
         ins.get_accel_count() <= 1 &&
         compass.get_count() <= 1) {

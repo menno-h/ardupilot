@@ -139,28 +139,19 @@ get_stabilize_quaternion(void)
   int32_t STB_QUAT_PIT_P = 11500;
   int32_t STB_QUAT_YAW_P = 11500;
   
-  // current quaternion (convert to radians first)
-  
-  float current_roll_radians = DEG_TO_RAD*ahrs.roll_sensor/100;
-  float current_pitch_radians = DEG_TO_RAD*ahrs.pitch_sensor/100;
-  float current_yaw_radians = DEG_TO_RAD*ahrs.yaw_sensor/100;
+  // get current quaternion
   
   ahrs.get_quaternion(actual_quaternion); // (29/03/2014-Menno)
-  menno1 = actual_quaternion[0];
-  menno2 = actual_quaternion[1];
-  menno3 = actual_quaternion[2];
-  menno4 = actual_quaternion[3];
-  //to_quaternion(current_roll_radians,current_pitch_radians,current_yaw_radians, actual_quaternion);
   
   // quaternion error
   quaternion_inverse(actual_quaternion, inverse_actual_quaternion);
   quaternion_multiply(inverse_actual_quaternion,control_quaternion, error_quaternion);
   
-  // calculate target rates  TODO: multiply with stabilize_gains // output corresponds to angle_error in cendidegrees
+  // calculate target rates - output corresponds to angle_error in cendidegrees
   int32_t error_roll = error_quaternion[0]*error_quaternion[1]*STB_QUAT_RLL_P;
   int32_t error_pitch = error_quaternion[0]*error_quaternion[2]*STB_QUAT_PIT_P;
   int32_t error_yaw = error_quaternion[0]*error_quaternion[3]*STB_QUAT_YAW_P;
- 
+  
   int32_t target_rate_roll = g.pi_stabilize_roll.kP()*error_roll;
   int32_t target_rate_pitch = g.pi_stabilize_pitch.kP()*error_pitch;
   int32_t target_rate_yaw = g.pi_stabilize_yaw.kP()*error_yaw + desired_yaw_rate_quaternion; // TODO: desired_yaw_rate_quaternion is in earth_frame, other term is in body_frame, is this a problem?
@@ -176,11 +167,6 @@ get_stabilize_quaternion(void)
   set_roll_rate_target(target_rate_roll, BODY_FRAME);
   set_pitch_rate_target(target_rate_pitch, BODY_FRAME);
   set_yaw_rate_target(target_rate_yaw, BODY_FRAME);
-  
-  // free adresses
-//  free(q_act);
-//  free(q_error);
-//  free(q_act_inv);
 
 }
 
@@ -676,10 +662,6 @@ run_rate_controllers()
     g.rc_1.servo_out = get_rate_roll(roll_rate_target_bf);
     g.rc_2.servo_out = get_rate_pitch(pitch_rate_target_bf);
     g.rc_4.servo_out = get_rate_yaw(yaw_rate_target_bf);
-    
-        menno8 = roll_rate_target_bf; // TODO: delete
-        menno9 = pitch_rate_target_bf;
-        menno10 = yaw_rate_target_bf;
         
 #endif
 
