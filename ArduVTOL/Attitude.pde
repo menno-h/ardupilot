@@ -177,7 +177,7 @@ get_stabilize_quaternion(void)
   
   int32_t target_rate_roll = g.pi_stabilize_roll.kP()*error_roll;
   int32_t target_rate_pitch = g.pi_stabilize_pitch.kP()*error_pitch;
-  int32_t target_rate_yaw = g.pi_stabilize_yaw.kP()*error_yaw + desired_yaw_rate_quaternion; // TODO: desired_yaw_rate_quaternion is in earth_frame, other term is in body_frame, is this a problem?
+  int32_t target_rate_yaw = g.pi_stabilize_yaw.kP()*error_yaw + desired_yaw_rate_quaternion; // TODO: desired_yaw_rate_quaternion is in earth_frame, other term is in body_frame, is this a problem? // g.pi_stabilize_yaw.kP()*error equals g.pi_stabilize_yaw.get_p(error)!
   
   // constrain the target rates
     if (!ap.disable_stab_rate_limit) {
@@ -564,15 +564,17 @@ get_pilot_desired_yaw(int32_t stick_angle)
     control_yaw += target_rate * G_Dt;
     control_yaw = wrap_360_cd(control_yaw);
 
-//    // calculate difference between desired heading and current heading // (01/04/2014-Menno) // ahrs.yaw_sensor cannot be used in quaternion control when in plane mode
-//    angle_error = wrap_180_cd(control_yaw - ahrs.yaw_sensor);
-//
-//    // limit the maximum overshoot
-//    angle_error	= constrain_int32(angle_error, -MAX_YAW_OVERSHOOT, MAX_YAW_OVERSHOOT);
-//
-//    // update control_yaw to be within max_angle_overshoot of our current heading
-//    control_yaw = wrap_360_cd(angle_error + ahrs.yaw_sensor);
-  
+if (1) { // set to 0 if you want real yaw lock - this is put back because controller gets unstable with strong wind gusts
+    // calculate difference between desired heading and current heading // (01/04/2014-Menno) // ahrs.yaw_sensor cannot be used in quaternion control when in plane mode // uncomment this if you want real yaw lock - this is put back because controller gets unstable with strong wind gusts
+    angle_error = wrap_180_cd(control_yaw - ahrs.yaw_sensor);
+
+    // limit the maximum overshoot
+    angle_error	= constrain_int32(angle_error, -MAX_YAW_OVERSHOOT, MAX_YAW_OVERSHOOT);
+
+    // update control_yaw to be within max_angle_overshoot of our current heading
+    control_yaw = wrap_360_cd(angle_error + ahrs.yaw_sensor);
+}
+
 }
 
 
@@ -588,7 +590,6 @@ get_yaw_rate_stabilized_ef(int32_t stick_angle)
 
     // convert the input to the desired yaw rate
     control_yaw += target_rate * G_Dt;
-   
     control_yaw = wrap_360_cd(control_yaw);
    
 
