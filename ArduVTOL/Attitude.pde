@@ -143,32 +143,31 @@ get_stabilize_quaternion(void)
   
   // get current quaternion
   
-  ahrs.get_quaternion(actual_quaternion); // (29/03/2014-Menno)
+  ahrs.get_quaternion(current_quaternion); // (29/03/2014-Menno)
   
-//  menno1 = actual_quaternion[0]*1000;
-//  menno2 = actual_quaternion[1]*1000;
-//  menno3 = actual_quaternion[2]*1000;
-//  menno4 = actual_quaternion[3]*1000;
+//  menno1 = current_quaternion[0]*1000;
+//  menno2 = current_quaternion[1]*1000;
+//  menno3 = current_quaternion[2]*1000;
+//  menno4 = current_quaternion[3]*1000;
 //  
 //  menno7 = ahrs.roll_sensor;
 //  menno8 = ahrs.pitch_sensor;
 //  menno9 = ahrs.yaw_sensor;
   
-  b2e_dcm = ahrs.get_dcm_matrix(); // body to earth dcm
-  
-//  menno1 = b2e_dcm.a.x*1000000;
-//  menno2 = b2e_dcm.a.y*1000000;
-//  menno3 = b2e_dcm.a.z*1000000;
-//  menno4 = b2e_dcm.b.x*1000000;
-//  menno5 = b2e_dcm.b.y*1000000;
-//  menno6 = b2e_dcm.b.z*1000000;
-//  menno7 = b2e_dcm.c.x*1000000;
-//  menno8 = b2e_dcm.c.y*1000000;
-//  menno9 = b2e_dcm.c.z*1000000;
+//  q2e_dcm = ahrs.get_dcm_matrix(); // quad body to earth dcm  
+//  menno1 = q2e_dcm.a.x*1000000;
+//  menno2 = q2e_dcm.a.y*1000000;
+//  menno3 = q2e_dcm.a.z*1000000;
+//  menno4 = q2e_dcm.b.x*1000000;
+//  menno5 = q2e_dcm.b.y*1000000;
+//  menno6 = q2e_dcm.b.z*1000000;
+//  menno7 = q2e_dcm.c.x*1000000;
+//  menno8 = q2e_dcm.c.y*1000000;
+//  menno9 = q2e_dcm.c.z*1000000;
   
   // quaternion error
-  quaternion_inverse(actual_quaternion, inverse_actual_quaternion);
-  quaternion_multiply(inverse_actual_quaternion,control_quaternion, error_quaternion);
+  quaternion_inverse(current_quaternion, inverse_current_quaternion);
+  quaternion_multiply(inverse_current_quaternion,control_quaternion, error_quaternion);
   
   // calculate target rates - output corresponds to angle_error in cendidegrees
   int32_t error_roll = error_quaternion[0]*error_quaternion[1]*STB_QUAT_RLL_P;
@@ -553,7 +552,7 @@ get_pitch_rate_stabilized_ef(int32_t stick_angle)
 
 // Convert radio signal to desired yaw used in quaternion yaw control // (11/03/2014-Menno)
 static void
-get_pilot_desired_yaw(int32_t stick_angle)
+get_pilot_desired_yaw(int32_t stick_angle, int8_t yaw_lock_enabled)
 {
     int32_t angle_error = 0;
     // convert the input to the desired yaw rate
@@ -564,7 +563,7 @@ get_pilot_desired_yaw(int32_t stick_angle)
     control_yaw += target_rate * G_Dt;
     control_yaw = wrap_360_cd(control_yaw);
 
-if (1) { // set to 0 if you want real yaw lock - this is put back because controller gets unstable with strong wind gusts
+    if (yaw_lock_enabled == 0) { // real yaw lock - this is put back because controller gets unstable with strong wind gusts // (15/05/2014-Menno)
     // calculate difference between desired heading and current heading // (01/04/2014-Menno) // ahrs.yaw_sensor cannot be used in quaternion control when in plane mode // uncomment this if you want real yaw lock - this is put back because controller gets unstable with strong wind gusts
     angle_error = wrap_180_cd(control_yaw - ahrs.yaw_sensor);
 
@@ -573,7 +572,7 @@ if (1) { // set to 0 if you want real yaw lock - this is put back because contro
 
     // update control_yaw to be within max_angle_overshoot of our current heading
     control_yaw = wrap_360_cd(angle_error + ahrs.yaw_sensor);
-}
+    }
 
 }
 
@@ -1491,7 +1490,7 @@ get_throttle_rate_stabilized(int16_t target_rate)
     if ((target_rate<0 && !motors.limit.throttle_lower) || (target_rate>0 && !motors.limit.throttle_upper)) {
         controller_desired_alt += target_rate * 0.02f;
     }
-
+    menno6 = controller_desired_alt; // TODO: delete, for debugging only
     // do not let target altitude get too far from current altitude
     controller_desired_alt = constrain_float(controller_desired_alt,current_loc.alt-750,current_loc.alt+750);
 

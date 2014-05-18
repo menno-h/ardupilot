@@ -433,45 +433,66 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: ANGLE_MAX
     // @DisplayName: Angle Max
-    // @Description: Maximum lean angle in all flight modes
+    // @Description: Maximum lean angle in all flight modes. Reboot is necessary upon change.
     // @Range 1000 8000
     // @User: Advanced
     GSCALAR(angle_max, "ANGLE_MAX",                 DEFAULT_ANGLE_MAX), // default is at 4500 but can be altered in MP
     
     // @Param: ANGLE_RATE_MAX
     // @DisplayName: Angle Rate max
-    // @Description: maximum rotation rate in roll/pitch axis requested by angle controller used in stabilize, loiter, rtl, auto flight modes
+    // @Description: maximum rotation rate in roll/pitch axis requested by angle controller used in stabilize, loiter, rtl, auto flight modes.
     // @Range 90000 250000
     // @User: Advanced
     GSCALAR(angle_rate_max, "ANGLE_RATE_MAX",  ANGLE_RATE_MAX),
     
     // @Param: ROLL_INPUT_MAX
     // @DisplayName: Roll Input Max
-    // @Description: Roll input range
+    // @Description: Roll input range. Don't forget to change ANGLE_MAX too. Reboot is necessary upon change.
     // @Range 1000 8000
     // @User: Advanced
     GSCALAR(roll_input_max, "ROLL_INPUT_MAX",        4500), // default is ROLL_PITCH_INPUT_MAX, but can be altered in MP // (23/03/2014-Menno)
    
     // @Param: PITCH_INPUT_MAX
     // @DisplayName: Pitch Input Max
-    // @Description: Pitch input range
+    // @Description: Pitch input range. Don't forget to change ANGLE_MAX too. Reboot is necessary upon change.
     // @Range 1000 8000
     // @User: Advanced
     GSCALAR(pitch_input_max, "PITCH_INPUT_MAX",      4500),  // default is ROLL_PITCH_INPUT_MAX, but can be altered in MP // (23/03/2014-Menno)
     
     // @Param: QUAT_ALT_HOLD
     // @DisplayName: Enable quaternion altitude hold
-    // @Description: 0: no altitude hold, but THROTTLE_MANUAL, 1: altitude hold, so THROTTLE_HOLD
+    // @Description: 0: no altitude hold, but THROTTLE_MANUAL, 1: altitude hold, so THROTTLE_HOLD. Switch out of and back to Stable_quat is necessary upon change, but can be done during flight
     // @Range 0 1
     // @User: Advanced
     GSCALAR(quaternion_alt_hold, "QUAT_ALT_HOLD",      0),  // (01/04/2014-Menno)
+    
+    // @Param: YAW_LOCK
+    // @DisplayName: Enable yaw lock
+    // @Description: 0: no yaw lock, 1: yaw lock. Change can be done during flight, without switching flightmode
+    // @Range 0 1
+    // @User: Advanced
+    GSCALAR(yaw_lock, "YAW_LOCK",      0),  // default is 0, but can be altered in MP // (18/05/2014-Menno) 
+    
+    // @Param: CRUISE_AOA
+    // @DisplayName: Desired Cruise AoA [cd]
+    // @Description: Desired angle of attack in Cruise flight mode in centidegrees. Switch out of and back to Cruise is necessary upon change, but can be done during flight
+    // @Range 0 9000
+    // @User: Advanced
+    GSCALAR(cruise_AoA, "CRUISE_AOA",      3000),  // default is 3000 (=6000 centidegrees quad pitch), but can be altered in MP // (18/05/2014-Menno)
 
     // @Param: CRUISE_TURNING
-    // @DisplayName: Turning mode for cruise quaternion flight
-    // @Description: 0 = turning as airplane yaw, 1 = turning as airplane roll
+    // @DisplayName: Enable taking turns in Cruise flight mode. Can be done during flight, without switching flightmode
+    // @Description: 0 = turning non available, 1 = turning available
     // @Range 0 1
     // @User: Advanced
     GSCALAR(cruise_turning, "CRUISE_TURNING",      0),  // default is 0, but can be altered in MP // (25/03/2014-Menno)
+    
+    // @Param: TRANSITION_TIME
+    // @DisplayName: Transition Time [s]
+    // @Description: Number of seconds to perform transition. Set this higher if you decrease CRUISE_AOA. Switch out of and back to Stable_quat is necessary upon change, but can be done during flight
+    // @Range 0 10
+    // @User: Advanced
+    GSCALAR(transition_time, "TRANSITION_TIME",      3),  // default is 3, but can be altered in MP // (25/03/2014-Menno)
     
     // @Param: RC_FEEL_RP
     // @DisplayName: RC Feel Roll/Pitch

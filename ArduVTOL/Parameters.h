@@ -101,9 +101,12 @@ public:
         
         k_param_roll_input_max, // (23/03/2014-Menno)
         k_param_pitch_input_max, // (23/03/2014-Menno)
-        k_param_cruise_turning, // (25/03/2014-Menno) // 0 if turning with airplane yaw, 1 if turning with airplane roll
+        k_param_cruise_turning, // (25/03/2014-Menno) // 0 if taking turns is disabled in CRUISE, 1 if taking turns is enabled
         
         k_param_quaternion_alt_hold, // (25/03/2014-Menno)
+        k_param_yaw_lock, // (18/05/2014-Menno)
+        k_param_cruise_AoA, // (18/05/2014-Menno)
+        k_param_transition_time, // (18/05/2014-Menno)
 
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove
@@ -340,8 +343,11 @@ public:
     // User parameters
     AP_Int16        roll_input_max;             // roll input range // (23/03/2014-Menno)
     AP_Int16        pitch_input_max;            // pitch input range // (23/03/2014-Menno)
-    AP_Int16        cruise_turning;             // (25/03/2014-Menno) // 0 if turning with airplane yaw, 1 if turning with airplane roll
+    AP_Int16        cruise_turning;             // (25/03/2014-Menno) //  0 if taking turns is disabled in CRUISE, 1 if taking turns is enabled
     AP_Int8         quaternion_alt_hold;        // (01/04/2014-Menno) // 0 if no altitude hold, 1 if altitude hold is on // can only be changed if you leave the flightmode and then go back to that flightmode
+    AP_Int8         yaw_lock;                   // (18/05/2014-Menno) // 0 no yaw lock, 1 yaw lock
+    AP_Float        cruise_AoA;                 // (18/05/2014-Menno) // desired angle of attack in Cruise flight mode
+    AP_Float        transition_time;             // (18/05/2014-Menno) // time to perform transition in seconds
     
     // Waypoints
     //

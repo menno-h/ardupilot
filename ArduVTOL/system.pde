@@ -505,27 +505,37 @@ static bool set_mode(uint8_t mode)
             break;
 			
         case CRUISE:      // (26/02/2014-Menno)
-            if ((CRUISE_PITCH_BAND_BEGIN >= ahrs.pitch_sensor && ahrs.pitch_sensor >= CRUISE_PITCH_BAND_END && g.rc_3.servo_out >= MINIMAL_CRUISE_THROTTLE) || ignore_checks) { // (27/02/2014-Menno) check if variables are used correctly and make new variable for throttle // ahrs.pitch_sensor is in centidegrees
-                success = true;
-                set_yaw_mode(CRUISE_YAW);
-                set_roll_pitch_mode(CRUISE_RP);
-                if (g.quaternion_alt_hold == 1) {
-                set_throttle_mode(THROTTLE_HOLD);  
-                }
-                else {
-                set_throttle_mode(THROTTLE_MANUAL);
-                }
-                set_nav_mode(NAV_NONE);
-                
-                control_cruise_climb_rate = 0;            // (1/03/2014-Menno)  
-                control_cruise_altitude = baro_alt/100;   // (1/03/2014-Menno)   // baro_alt is in cm
-                control_cruise_curvature = 0;             // (1/03/2014-Menno)
-                
+            success = true;
+            to_quaternion(0, 0, 0, initial_quaternion);
+            p2q_dcm.from_euler(0,PI/2,0);
+            set_yaw_mode(CRUISE_YAW);
+            set_roll_pitch_mode(CRUISE_RP);
+            if (g.quaternion_alt_hold == 1) {
+            set_throttle_mode(THROTTLE_HOLD);  
             }
+            else {
+            set_throttle_mode(THROTTLE_MANUAL);
+            }
+            set_nav_mode(NAV_NONE);
+                
+            control_cruise_climb_rate = 0;            // (1/03/2014-Menno)  
+            control_cruise_altitude = current_loc.alt/100;   // (1/03/2014-Menno)   // in cm
+            control_cruise_curvature = 0;             // (1/03/2014-Menno)
+            
+            // set starting controls
+            transition_to_cruise = true;
+            counter_trans = 0;
+            counter_trans_limit = g.transition_time/(9000-g.cruise_AoA);  // number of centiseconds (loops) per degree (*100 conversion from cd to degrees, *1/0.01 conversion form seconds to centiseconds, i.e. one tick at 100Hz)
+            counter_trans_limit = counter_trans_limit*100/0.01;
+            control_roll = 0; // cd 
+            control_pitch = 0; // cd
+            control_yaw = ahrs.yaw_sensor; // in cd
+            controller_desired_alt = current_loc.alt; // (18/05/2014-Menno) // in cm
             break;
             
         case STABLE_QUAT:{    // (11/03/2014-Menno)
             success = true;
+            to_quaternion(0, 0, 0, initial_quaternion);
             set_yaw_mode(STABLE_QUAT_YAW);
             set_roll_pitch_mode(STABLE_QUAT_RP);
             if (g.quaternion_alt_hold == 1) {
@@ -535,12 +545,11 @@ static bool set_mode(uint8_t mode)
             set_throttle_mode(THROTTLE_MANUAL);
             }
             set_nav_mode(NAV_NONE);
-            // set initial quaternion            
-            to_quaternion(0, 0, 0, initial_quaternion);
             // set starting controls
             control_roll = 0; // cd 
             control_pitch = 0; // cd
             control_yaw = ahrs.yaw_sensor; // in cd
+            controller_desired_alt = current_loc.alt; // (18/05/2014-Menno) // in cm
             break;}
 
         default:
