@@ -376,8 +376,7 @@ static bool manual_flight_mode(uint8_t mode) {
 #define CRUISE_PITCH_BAND_END -6000   // (02/03/2014-Menno) // in centidegrees
 #define MINIMAL_CRUISE_THROTTLE 500 // (04/03/2014-Menno) 
 static bool set_mode(uint8_t mode)
-{
-    
+{       
     // boolean to record if flight mode could be set
     bool success = false;
     bool ignore_checks = !motors.armed();   // allow switching to any mode if disarmed.  We rely on the arming check to perform
@@ -505,6 +504,7 @@ static bool set_mode(uint8_t mode)
             break;
 			
         case CRUISE:      // (26/02/2014-Menno)
+            // initialisation
             success = true;
             to_quaternion(0, 0, 0, initial_quaternion);
             p2q_dcm.from_euler(0,PI/2,0);
@@ -517,16 +517,19 @@ static bool set_mode(uint8_t mode)
             set_throttle_mode(THROTTLE_MANUAL);
             }
             set_nav_mode(NAV_NONE);
-                
+            
+            // cruise params
             control_cruise_climb_rate = 0;            // (1/03/2014-Menno)  
             control_cruise_altitude = current_loc.alt/100;   // (1/03/2014-Menno)   // in cm
             control_cruise_curvature = 0;             // (1/03/2014-Menno)
             
-            // set starting controls
+            // transition control
             transition_to_cruise = true;
             counter_trans = 0;
             counter_trans_limit = g.transition_time/(9000-g.cruise_AoA);  // number of centiseconds (loops) per degree (*100 conversion from cd to degrees, *1/0.01 conversion form seconds to centiseconds, i.e. one tick at 100Hz)
             counter_trans_limit = counter_trans_limit*100/0.01;
+            
+            // control initialisation
             control_roll = 0; // cd 
             control_pitch = 0; // cd
             control_yaw = ahrs.yaw_sensor; // in cd
@@ -534,6 +537,7 @@ static bool set_mode(uint8_t mode)
             break;
             
         case STABLE_QUAT:{    // (11/03/2014-Menno)
+            // initialisation
             success = true;
             to_quaternion(0, 0, 0, initial_quaternion);
             set_yaw_mode(STABLE_QUAT_YAW);
@@ -545,10 +549,21 @@ static bool set_mode(uint8_t mode)
             set_throttle_mode(THROTTLE_MANUAL);
             }
             set_nav_mode(NAV_NONE);
-            // set starting controls
+
+            // transition control and control initialisation
+            if(horizontal_flight == true){
+            transition_from_cruise = true;
+            counter_trans_limit = g.transition_time2/(9000-g.cruise_AoA);  // number of centiseconds (loops) per degree (*100 conversion from cd to degrees, *1/0.01 conversion form seconds to centiseconds, i.e. one tick at 100Hz)
+            counter_trans_limit = counter_trans_limit*100/0.01;
+            counter_trans = 0;
+            control_pitch = -9000 + g.cruise_AoA; // (20/05/2014-Menno) smooth trasition back from Cruise to Stabilize
+            control_roll = 0;
+            // TODO: set control_yaw to plane_yaw;
+            }
+            else {
             control_roll = 0; // cd 
             control_pitch = 0; // cd
-            control_yaw = ahrs.yaw_sensor; // in cd
+            control_yaw = ahrs.yaw_sensor;} // in cd
             controller_desired_alt = current_loc.alt; // (18/05/2014-Menno) // in cm
             break;}
 
@@ -556,6 +571,9 @@ static bool set_mode(uint8_t mode)
             success = false;
             break;
     }
+    
+    if (mode != CRUISE) {
+    horizontal_flight == false;}
 
     // update flight mode
     if (success) {

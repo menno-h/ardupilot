@@ -107,7 +107,8 @@ public:
         k_param_yaw_lock, // (18/05/2014-Menno)
         k_param_cruise_AoA, // (18/05/2014-Menno)
         k_param_transition_time, // (18/05/2014-Menno)
-
+        k_param_transition_time2, // (21/05/2014-Menno)
+        
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove
         k_param_gpslock_limit,          // deprecated - remove
@@ -347,7 +348,8 @@ public:
     AP_Int8         quaternion_alt_hold;        // (01/04/2014-Menno) // 0 if no altitude hold, 1 if altitude hold is on // can only be changed if you leave the flightmode and then go back to that flightmode
     AP_Int8         yaw_lock;                   // (18/05/2014-Menno) // 0 no yaw lock, 1 yaw lock
     AP_Float        cruise_AoA;                 // (18/05/2014-Menno) // desired angle of attack in Cruise flight mode
-    AP_Float        transition_time;             // (18/05/2014-Menno) // time to perform transition in seconds
+    AP_Float        transition_time;            // (18/05/2014-Menno) // time to perform transition to cruise in seconds
+    AP_Float        transition_time2;            // (21/05/2014-Menno) // time to perform transition to hover in seconds
     
     // Waypoints
     //

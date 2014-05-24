@@ -545,6 +545,8 @@ static int16_t control_cruise_curvature;       // (01/03/2014-Menno) // variable
 static int32_t control_cruise_altitude;        // (01/03/2014-Menno) // variable hight (m) in CRUISE flight mode
 static int16_t control_cruise_climb_rate;      // (01/03/2014-Menno) // variable hight speed (m/s) in CRUISE flight mode
 static bool transition_to_cruise;              // (18/05/2014-Menno) // indicates if we just entered Cruise flight mode and a transition is necessary
+static bool horizontal_flight = false;                 // (20/05/2014-Menno) // to indicate if we went into horizontal flight (necessary for if comming out of this, to have smooth transition)
+static bool transition_from_cruise;            // (20/05/2014-Menno) // indicates if we just got out of mode Cruise
 static float counter_trans;                    // (18/05/2014-Menno) // used for smooth transition to Cruise flight mode
 static float counter_trans_limit;              // (18/05/2014-Menno) // limit for counter_trans in number of centiseconds (0.01 s)
 // set initial quaternion
@@ -1805,7 +1807,8 @@ void update_roll_pitch_mode(void)
           else {counter_trans += 1;}
           
           if (control_pitch <= -9000 + g.cruise_AoA){
-            transition_to_cruise = false;}
+            transition_to_cruise = false;
+            horizontal_flight = true;}
         }
         else {
           control_pitch = -9000 + g.cruise_AoA;
@@ -1823,8 +1826,20 @@ void update_roll_pitch_mode(void)
         break;
         
     case ROLL_PITCH_STABLE_QUAT:  // (11/03/2014-Menno)
+        if (transition_from_cruise == true){ // (18/05/2014-Menno)
+          if (counter_trans>=counter_trans_limit/2){ // (20/05/2014-Menno) 2 times faster then transition to Cruise
+            control_pitch += 100; // move reference one degree (100 cd)
+            counter_trans = 0;} // reset counter
+          else {counter_trans += 1;}
+          
+          if (control_pitch >= 0){
+            transition_from_cruise = false;
+            horizontal_flight = false;} 
+        }
+        else {
         // convert pilot input to lean angles
-        get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, control_roll, control_pitch);
+        get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, control_roll, control_pitch);}
+   
         // rest is done in update quaternion  
         break;
 
@@ -2075,6 +2090,8 @@ void update_throttle_mode(void)
         if(ap.auto_armed) {
             // alt hold plus pilot input of climb rate
             pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
+            if (control_mode == CRUISE){
+            pilot_climb_rate = pilot_climb_rate/2;}
             menno5=pilot_climb_rate;
             // special handling if we have landed
             if (ap.land_complete) {

@@ -489,10 +489,17 @@ const AP_Param::Info var_info[] PROGMEM = {
     
     // @Param: TRANSITION_TIME
     // @DisplayName: Transition Time [s]
-    // @Description: Number of seconds to perform transition. Set this higher if you decrease CRUISE_AOA. Switch out of and back to Stable_quat is necessary upon change, but can be done during flight
+    // @Description: Number of seconds to perform transition to Cruise. Set this higher if you decrease CRUISE_AOA. Switch out of and back to Stable_quat is necessary upon change, but can be done during flight
     // @Range 0 10
     // @User: Advanced
-    GSCALAR(transition_time, "TRANSITION_TIME",      3),  // default is 3, but can be altered in MP // (25/03/2014-Menno)
+    GSCALAR(transition_time, "TRANSITION_TIME",      3),  // default is 3, but can be altered in MP // (19/05/2014-Menno)
+    
+    // @Param: TRANSITION_TIME2
+    // @DisplayName: Transition Time [s]
+    // @Description: Number of seconds to perform transition back to hover. Set this higher if you decrease CRUISE_AOA. Switch out of and back to Stable_quat is necessary upon change, but can be done during flight
+    // @Range 0 10
+    // @User: Advanced
+    GSCALAR(transition_time2, "TRANSITION_TIME2",      1),  // default is 3, but can be altered in MP // (21/05/2014-Menno)
     
     // @Param: RC_FEEL_RP
     // @DisplayName: RC Feel Roll/Pitch
