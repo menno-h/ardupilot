@@ -549,6 +549,7 @@ static bool horizontal_flight = false;                 // (20/05/2014-Menno) // 
 static bool transition_from_cruise;            // (20/05/2014-Menno) // indicates if we just got out of mode Cruise
 static float counter_trans;                    // (18/05/2014-Menno) // used for smooth transition to Cruise flight mode
 static float counter_trans_limit;              // (18/05/2014-Menno) // limit for counter_trans in number of centiseconds (0.01 s)
+static int16_t counter_failsafe;               // (24/05/2014-Menno) // if plane_pitch is smaller than limit for #seconds, go back to quaternion stabilize flight mode 
 // set initial quaternion
 Quaternion initial_quaternion;              // (11/03/2014-Menno) // used as initial reference when entering STABLE_QUAT mode           
 Quaternion control_quaternion;
@@ -686,6 +687,8 @@ static AP_BattMonitor battery;
 ////////////////////////////////////////////////////////////////////////////////
 // The (throttle) controller desired altitude in cm
 static float controller_desired_alt;
+// The (throttle) controller desired climb rate in cm/s
+static float controller_desired_climb_rate;
 // The cm we are off in altitude from next_WP.alt – Positive value means we are below the WP
 static int32_t altitude_error;
 // The cm/s we are moving up or down based on filtered data - Positive = UP
@@ -1073,7 +1076,7 @@ static void fast_loop()
     menno1 = control_roll; // centidegrees
     menno2 = control_pitch; // centidegrees
     menno3 = control_yaw; // centidegrees
-    menno4 = desired_yaw_rate_quaternion; // centidegrees/s
+//    menno4 = desired_yaw_rate_quaternion; // centidegrees/s //TODO: uncomment
     
     if (control_mode == STABLE_QUAT || control_mode == CRUISE ){ // (11/03/2014-Menno)
       // control_roll, control_pitch, control_yaw where set during update_roll_pitch_mode and update_yaw_mode
@@ -1081,9 +1084,9 @@ static void fast_loop()
       update_quaternion();
     }
  
-    menno7 = roll_rate_target_bf;
-    menno8 = pitch_rate_target_bf;
-    menno9 = yaw_rate_target_bf;
+//    menno7 = roll_rate_target_bf;
+//    menno8 = pitch_rate_target_bf;
+//    menno9 = yaw_rate_target_bf;
 
     // update targets to rate controllers
     update_rate_contoller_targets(); 
@@ -1579,13 +1582,14 @@ void update_yaw_mode(void)
         }
 		break;
 		
-    case YAW_CRUISE:  // (26/02/2014-Menno)
+    case YAW_CRUISE:{  // (26/02/2014-Menno)
         // heading required // (01/03/2014-Menno)
-//        control_cruise_curvature = get_cruise_curvature(g.rc_2.control_in);   //  translate pilot input to a curvature (1/m)                            
-//        get_cruise_yaw(control_cruise_curvature); // control copter yaw (airplane roll) to take a turn with radius equal to 1/control_cruise_curvature
-        pilot_yaw = pilot_yaw*g.cruise_turning; // (18/05/2014-Menno)
-        get_pilot_desired_yaw(pilot_yaw/20,1); // pilot_yaw is devided by 20 because yaw in forward flight is much slower. TODO: Tune this value with experiments. // (18/05/2014-Menno)
-        break;	
+//      control_cruise_curvature = get_cruise_curvature(g.rc_2.control_in);   //  translate pilot input to a curvature (1/m)                            
+//      get_cruise_yaw(control_cruise_curvature); // control copter yaw (airplane roll) to take a turn with radius equal to 1/control_cruise_curvature
+        float pilot_input;
+        pilot_input = (float)g.rc_1.control_in / g.roll_input_max; // between 0 and 1
+        get_pilot_desired_yaw(pilot_input,1); // pilot_yaw is devided by 20 because yaw in forward flight is much slower. TODO: Tune this value with experiments. // (18/05/2014-Menno)
+        break;}
         
     case YAW_STABLE_QUAT: // (11/03/2014-Menno)
         // convert pilot input to desired yaw for quaternion yaw control
@@ -1797,7 +1801,7 @@ void update_roll_pitch_mode(void)
 		
     case ROLL_PITCH_CRUISE:  // (26/02/2014-Menno) // ROLL_INPUT_MAX AND PITCH_INPUT_MAX should be 4500 here, pitch not 8000 because the reference in this mode is -9000centidegrees pitch
         // pass desired attitude to cruise attitude controllers // (01/03/2014-Menno)   
-        // get_cruise_pitch(control_cruise_altitude, control_cruise_climb_rate, climb_rate/100);  // climb_rate is in cm/s but get_cruise_pitch expects climb_rate in m/s
+        // get_pitch_cruise(control_cruise_altitude, control_cruise_climb_rate, climb_rate/100);  // climb_rate is in cm/s but get_pitch_cruise expects climb_rate in m/s
         // get_cruise_roll(ahrs.yaw_sensor,control_cruise_curvature); // copter roll is airplane yaw
         // get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, control_roll, control_pitch);
         if (transition_to_cruise == true){ // (18/05/2014-Menno)
@@ -1806,23 +1810,42 @@ void update_roll_pitch_mode(void)
             counter_trans = 0;} // reset counter
           else {counter_trans += 1;}
           
-          if (control_pitch <= -9000 + g.cruise_AoA){
+          if (control_pitch <= -9000 + g.cruise_AoA - g.rigging_angle){
             transition_to_cruise = false;
             horizontal_flight = true;}
         }
         else {
-          control_pitch = -9000 + g.cruise_AoA;
+
+          if (g.quaternion_alt_hold_type == 0){ // (25/05/2014-Menno)
+            int16_t pilot_climb_rate;
+            pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in,g.cruise_climb_rate_max,g.cruise_descend_rate_max);
+            control_pitch = -9000 + g.cruise_AoA - g.rigging_angle + constrain_int16(g.pitch_cruise_ff_b*abs(desired_yaw_rate_quaternion),0,1000);
+            menno9 = constrain_int16(g.pitch_cruise_ff_b*abs(desired_yaw_rate_quaternion),0,1000); // TODO: delete
+            if (pilot_climb_rate>0){
+              control_pitch = control_pitch + g.pitch_cruise_ff_a*pilot_climb_rate;}}
+          else {
+            int16_t pilot_climb_rate;
+            pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in,g.cruise_climb_rate_max,g.cruise_descend_rate_max);
+            get_cruise_pitch(pilot_climb_rate);}       
         }
           
-        control_roll = 0; // overwrite roll input if it was exidently given TODO: replace "control_roll=0;" by "control_plane_roll=constrain(plane_roll,-max_plane_roll,max_plane_roll);" and uncomment/complete lines below. // (18/05/2014-Menno)
+         control_roll = 0; // overwrite roll input if it was exidently given TODO: replace "control_roll=0;" by "control_plane_roll=constrain(plane_roll,-max_plane_roll,max_plane_roll);" and uncomment/complete lines below. // (18/05/2014-Menno)
          q2e_dcm = ahrs.get_dcm_matrix(); // quad body to earth dcm.
          p2e_dcm = q2e_dcm*p2q_dcm;
          p2e_dcm.to_euler(&plane_roll,&plane_pitch,&plane_yaw);
-         plane_roll     = degrees(plane_roll)  * 100;
+         plane_roll     = degrees(plane_roll)  * 100; // centidegrees
          plane_pitch    = degrees(plane_pitch) * 100;
          plane_yaw      = degrees(plane_yaw)   * 100;
+         menno4 = plane_roll;
+         menno5 = plane_pitch;
+         menno6 = plane_yaw;
          if (plane_yaw < 0){
          plane_yaw += 36000;}
+         if (plane_pitch < 1000 || (horizontal_flight == true && abs(plane_roll)>3000)){
+           counter_failsafe += 1;
+           if (counter_failsafe == 50) {
+             set_mode(STABLE_QUAT);}}
+         else {counter_failsafe = 0;}
         break;
         
     case ROLL_PITCH_STABLE_QUAT:  // (11/03/2014-Menno)
@@ -2032,7 +2055,12 @@ void update_throttle_mode(void)
     }
 #endif // FRAME_CONFIG != HELI_FRAME
 
-    switch(throttle_mode) {
+uint8_t thr_mode;
+if (throttle_mode == THROTTLE_CRUISE && transition_to_cruise == true){
+  thr_mode = THROTTLE_STABLE_QUAT;}
+else {thr_mode = throttle_mode;}
+
+    switch(thr_mode) {
 
     case THROTTLE_MANUAL:
         // completely manual throttle
@@ -2089,10 +2117,17 @@ void update_throttle_mode(void)
     case THROTTLE_HOLD:
         if(ap.auto_armed) {
             // alt hold plus pilot input of climb rate
-            pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
-            if (control_mode == CRUISE){
-            pilot_climb_rate = pilot_climb_rate/2;}
-            menno5=pilot_climb_rate;
+            int16_t max_rate_up;
+            int16_t max_rate_down;
+            
+            if (control_mode == CRUISE) {
+              max_rate_up = g.cruise_climb_rate_max;
+              max_rate_down = g.cruise_descend_rate_max;}
+            else {
+              max_rate_up = g.pilot_velocity_z_max;
+              max_rate_down = g.pilot_velocity_z_max;}
+            
+            pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in,max_rate_up,max_rate_down);
             // special handling if we have landed
             if (ap.land_complete) {
                 if (pilot_climb_rate > 0) {
@@ -2151,16 +2186,18 @@ void update_throttle_mode(void)
         set_target_alt_for_reporting(0);
         break;
 		
-    case THROTTLE_CRUISE:  // (26/02/2014-Menno)
+    case THROTTLE_CRUISE:{  // (26/02/2014-Menno)
         // Cruise throttle // (02/03/2014-Menno)
-        get_cruise_throttle(control_cruise_altitude, control_cruise_climb_rate);     // this function calls set_target_alt_for_reporting for us // baro_alt is in cm but function input should be in meters, same for climb_rate       
-        break;
+        //get_cruise_throttle(control_cruise_altitude, control_cruise_climb_rate);     // this function calls set_target_alt_for_reporting for us // baro_alt is in cm but function input should be in meters, same for climb_rate       
+        
+        int16_t throttle_out = g.throttle_ff_a*controller_desired_climb_rate + g.throttle_ff_b;
+        g.rc_3.servo_out = throttle_out;
+        break;}
            
     case THROTTLE_STABLE_QUAT: // (11/03/2014-Menno) // same as THROTTLE_HOLD
         if(ap.auto_armed) {
             // alt hold plus pilot input of climb rate
-            pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
-
+            pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in,g.pilot_velocity_z_max,g.pilot_velocity_z_max);
             // special handling if we have landed
             if (ap.land_complete) {
                 if (pilot_climb_rate > 0) {
@@ -2185,6 +2222,7 @@ void update_throttle_mode(void)
                     get_throttle_rate_stabilized(pilot_climb_rate);     // this function calls set_target_alt_for_reporting for us
                 }
             }
+
         }else{
             // pilot's throttle must be at zero so keep motors off
             set_throttle_out(0, false);
@@ -2497,6 +2535,10 @@ static void tuning(){
         // set max loiter speed to 0 ~ 1000 cm/s
         wp_nav.set_loiter_velocity(g.rc_6.control_in);
         break;
+        
+    case CH6_AOA:
+        // set AoA in cruise flight mode
+        g.cruise_AoA = tuning_value*1000; // (29/05/2014-Menno) // tune desired angle of attack in air. If all limits are to their maximum you can set this whith channel 6 between 0 and 32000. But only 0 to 9000 are realistic. However set this to safe limits! This depends also on the real rigging angle on your plane, and the parameter rigging angle you've set. Best to set tune_low to 1000cd and tune_high to 8000cd, than set "min" and "max" in "extended tuning" from 0 to 8decadegrees correspondingly.
     }
 }
 

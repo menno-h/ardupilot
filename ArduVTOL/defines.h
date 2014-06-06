@@ -172,6 +172,7 @@
 #define CH6_CIRCLE_RATE                 39  // circle turn rate in degrees (hard coded to about 45 degrees in either direction)
 #define CH6_SONAR_GAIN                  41  // sonar gain
 #define CH6_LOIT_SPEED                  42  // maximum speed during loiter (0 to 10m/s)
+#define CH6_AOA                         43  // AoA during cruise flight mode
 
 // Acro Trainer types
 #define ACRO_TRAINER_DISABLED   0

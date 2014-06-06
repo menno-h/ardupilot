@@ -258,7 +258,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 10 500
     // @Increment: 10
     // @User: Standard
-    GSCALAR(pilot_velocity_z_max,     "PILOT_VELZ_MAX",   PILOT_VELZ_MAX),
+    GSCALAR(pilot_velocity_z_max,     "PILOT_VELZ_MAX",   DEFAULT_PILOT_VELZ_MAX),
 
     // @Param: THR_MIN
     // @DisplayName: Throttle Minimum
@@ -386,7 +386,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @DisplayName: Channel 6 Tuning
     // @Description: Controls which parameters (normally PID gains) are being tuned with transmitter's channel 6 knob
     // @User: Standard
-    // @Values: 0:None,1:Stab Roll/Pitch kP,4:Rate Roll/Pitch kP,5:Rate Roll/Pitch kI,21:Rate Roll/Pitch kD,3:Stab Yaw kP,6:Rate Yaw kP,26:Rate Yaw kD,14:Altitude Hold kP,7:Throttle Rate kP,37:Throttle Rate kD,34:Throttle Accel kP,35:Throttle Accel kI,36:Throttle Accel kD,42:Loiter Speed,12:Loiter Pos kP,22:Loiter Rate kP,28:Loiter Rate kI,23:Loiter Rate kD,10:WP Speed,25:Acro RollPitch kP,40:Acro Yaw kP,9:Relay On/Off,13:Heli Ext Gyro,17:OF Loiter kP,18:OF Loiter kI,19:OF Loiter kD,30:AHRS Yaw kP,31:AHRS kP,32:INAV_TC,38:Declination,39:Circle Rate,41:Sonar Gain
+    // @Values: 0:None,1:Stab Roll/Pitch kP,4:Rate Roll/Pitch kP,5:Rate Roll/Pitch kI,21:Rate Roll/Pitch kD,3:Stab Yaw kP,6:Rate Yaw kP,26:Rate Yaw kD,14:Altitude Hold kP,7:Throttle Rate kP,37:Throttle Rate kD,34:Throttle Accel kP,35:Throttle Accel kI,36:Throttle Accel kD,42:Loiter Speed,12:Loiter Pos kP,22:Loiter Rate kP,28:Loiter Rate kI,23:Loiter Rate kD,10:WP Speed,25:Acro RollPitch kP,40:Acro Yaw kP,9:Relay On/Off,13:Heli Ext Gyro,17:OF Loiter kP,18:OF Loiter kI,19:OF Loiter kD,30:AHRS Yaw kP,31:AHRS kP,32:INAV_TC,38:Declination,39:Circle Rate,41:Sonar Gain,43:Cruise AoA
     GSCALAR(radio_tuning, "TUNE",                   0),
 
     // @Param: TUNE_LOW
@@ -459,12 +459,12 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(pitch_input_max, "PITCH_INPUT_MAX",      4500),  // default is ROLL_PITCH_INPUT_MAX, but can be altered in MP // (23/03/2014-Menno)
     
-    // @Param: QUAT_ALT_HOLD
-    // @DisplayName: Enable quaternion altitude hold
-    // @Description: 0: no altitude hold, but THROTTLE_MANUAL, 1: altitude hold, so THROTTLE_HOLD. Switch out of and back to Stable_quat is necessary upon change, but can be done during flight
+    // @Param: ALT_HOLD_TYPE
+    // @DisplayName: Altitude control type for Cruise flightmode
+    // @Description: 0: THROTTLE_HOLD, 1: THROTTLE_CRUISE. Switch out of and back to Cruise is necessary upon change, but can be done during flight
     // @Range 0 1
     // @User: Advanced
-    GSCALAR(quaternion_alt_hold, "QUAT_ALT_HOLD",      0),  // (01/04/2014-Menno)
+    GSCALAR(quaternion_alt_hold_type, "ALT_HOLD_TYPE",      0),  // (01/04/2014-Menno)
     
     // @Param: YAW_LOCK
     // @DisplayName: Enable yaw lock
@@ -478,7 +478,21 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Description: Desired angle of attack in Cruise flight mode in centidegrees. Switch out of and back to Cruise is necessary upon change, but can be done during flight
     // @Range 0 9000
     // @User: Advanced
-    GSCALAR(cruise_AoA, "CRUISE_AOA",      3000),  // default is 3000 (=6000 centidegrees quad pitch), but can be altered in MP // (18/05/2014-Menno)
+    GSCALAR(cruise_AoA, "CRUISE_AOA",      4000),  // default is 3000 (=6000 centidegrees quad pitch), but can be altered in MP // (18/05/2014-Menno)
+    
+    // @Param: RIGGING_ANGLE
+    // @DisplayName: Rigging angle of wing [cd]
+    // @Description: Angle between wing chord and body frame in centidegrees
+    // @Range -2000 2000
+    // @User: Advanced
+    GSCALAR(rigging_angle, "RIGGING_ANGLE",      0),  // default is 0, but can be altered in MP // (18/05/2014-Menno)
+   
+    // @Param: CRUISE_SPEED
+    // @DisplayName: Desired optimal Cruise speed [cm/s]
+    // @Description: Desired optimal speed in Cruise flight mode in cm/s. Can be changed during flight
+    // @Range 500 2000
+    // @User: Advanced
+    GSCALAR(cruise_speed, "CRUISE_SPEED",      1200),  // default is 3000 (=6000 centidegrees quad pitch), but can be altered in MP // (18/05/2014-Menno)
 
     // @Param: CRUISE_TURNING
     // @DisplayName: Enable taking turns in Cruise flight mode. Can be done during flight, without switching flightmode
@@ -486,6 +500,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range 0 1
     // @User: Advanced
     GSCALAR(cruise_turning, "CRUISE_TURNING",      0),  // default is 0, but can be altered in MP // (25/03/2014-Menno)
+    
+    
+    // @Param: CRUISE_CURVATURE
+    // @DisplayName: Cruise curvature radius [-/m]
+    // @Description: Maximal radius 
+    // @Range 0 0.2
+    // @User: Advanced
+    GSCALAR(cruise_curvature, "CRUISE_CURVATURE",    0.0001  ),  // default is 0.0002 (50meters radius), but can be altered in MP // (25/03/2014-Menno)
     
     // @Param: TRANSITION_TIME
     // @DisplayName: Transition Time [s]
@@ -501,6 +523,55 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(transition_time2, "TRANSITION_TIME2",      1),  // default is 3, but can be altered in MP // (21/05/2014-Menno)
     
+    // @Param: CRUISE_MAX_UP
+    // @DisplayName:  Maximum climb rate in Cruise flight mode [cm/s]
+    // @Description: 
+    // @Range 50 150
+    // @User: Advanced
+    GSCALAR(cruise_climb_rate_max, "CRUISE_MAX_UP",      100),  // default is 100, but can be altered in MP // (24/05/2014-Menno)
+    
+    // @Param: CRUISE_MAX_DN
+    // @DisplayName: Maximum descend rate in Cruise flight mode [cm/s]
+    // @Description: 
+    // @Range 50 100
+    // @User: Advanced
+    GSCALAR(cruise_descend_rate_max, "CRUISE_MAX_DN",      100),  // default is 100, but can be altered in MP // (24/05/2014-Menno)
+    
+    // @Param: THROTTLE_FF_A
+    // @DisplayName:  Climb rate dependend throttle feedforward
+    // @Description: Throttle feedforward in Cruise fligth mode (pilot desired climb rate dependend)
+    // @Range 0.5 1.5
+    // @User: Advanced
+    GSCALAR(throttle_ff_a, "THROTTLE_FF_A",    0.75),  // (24/05/2014-Menno) 
+    
+    // @Param: THROTTLE_FF_B
+    // @DisplayName:  Throttle feedforward
+    // @Description: Throttle feedforward in Cruise fligth mode
+    // @Range 250 500
+    // @User: Advanced
+    GSCALAR(throttle_ff_b, "THROTTLE_FF_B",    400),  // (24/05/2014-Menno) 
+    
+    // @Param: PCH_CRUISE_FF_A
+    // @DisplayName:  Pitch feedforward (climb rate)
+    // @Description: Pitch feedforward if climb rate is positive
+    // @Range 2 10
+    // @User: Advanced
+    GSCALAR(pitch_cruise_ff_a, "PCH_CRUISE_FF_A",    5),  // (24/05/2014-Menno) 
+    
+    // @Param: PCH_CRUISE_FF_B
+    // @DisplayName:  Pitch feedforward (yaw rate)
+    // @Description: Pitch feedforward if yaw rate is non-negative
+    // @Range 0 0.8
+    // @User: Advanced
+    GSCALAR(pitch_cruise_ff_b, "PCH_CRUISE_FF_B",    0.5),  // (24/05/2014-Menno) 
+    
+    // @Param: PCH_CRUISE_ALT_P
+    // @DisplayName:  Altitude error gain [-/s]
+    // @Description: Gain to calculate reference climb rate out of altitude error
+    // @Range: 0.1 1.0
+    // @User: Advanced
+    GSCALAR(pitch_cruise_alt_p, "PCH_CRUISE_ALT_P",    0.3),  // (24/05/2014-Menno) 
+
     // @Param: RC_FEEL_RP
     // @DisplayName: RC Feel Roll/Pitch
     // @Description: RC feel for roll/pitch which controls vehicle response to user input with 0 being extremely soft and 100 begin crisp
@@ -708,21 +779,21 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: RATE_PIT_P
     // @DisplayName: Pitch axis rate controller P gain
     // @Description: Pitch axis rate controller P gain.  Converts the difference between desired pitch rate and actual pitch rate into a motor speed output
-    // @Range: 0.08 0.20
-    // @Increment: 0.005
+    // @Range: 0 10
+    // @Increment: 0.1
     // @User: Standard
 
     // @Param: RATE_PIT_I
     // @DisplayName: Pitch axis rate controller I gain
     // @Description: Pitch axis rate controller I gain.  Corrects long-term difference in desired pitch rate vs actual pitch rate
-    // @Range: 0.01 0.5
+    // @Range: 0 3
     // @Increment: 0.01
     // @User: Standard
 
     // @Param: RATE_PIT_IMAX
     // @DisplayName: Pitch axis rate controller I gain maximum
     // @Description: Pitch axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
-    // @Range: 0 500
+    // @Range: 0 20
     // @Increment: 10
     // @Units: Percent*10
     // @User: Standard
@@ -730,7 +801,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: RATE_PIT_D
     // @DisplayName: Pitch axis rate controller D gain
     // @Description: Pitch axis rate controller D gain.  Compensates for short-term change in desired pitch rate vs actual pitch rate
-    // @Range: 0.001 0.02
+    // @Range: 0 3
     // @Increment: 0.001
     // @User: Standard
     GGROUP(pid_rate_pitch,    "RATE_PIT_", AC_PID),
@@ -929,57 +1000,57 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GGROUP(pid_optflow_pitch, "OF_PIT_",   AC_PID),
     
-    // @Param: THR_ALT_CRUISE_P
-    // @DisplayName: Throttle altitude controller P gain
-    // @Description: Throttle altitude controller P gain.  Converts the difference between desired vertical speed and actual speed into a desired acceleration that is passed to the throttle acceleration controller
-    // @Range: 1.000 8.000
-    // @User: Standard
-
-    // @Param: THR_ALT_CRUISE_I
-    // @DisplayName: Throttle altitude controller I gain
-    // @Description: Throttle altitude controller I gain.  Corrects long-term difference in desired altitude and actual altitude
-    // @Range: 0.000 0.100
-    // @User: Standard
-
-    // @Param: THR_ALT_CRUISE_IMAX
-    // @DisplayName: Throttle altitude controller I gain maximum
-    // @Description: Throttle altitude controller I gain maximum.  Constrains the desired acceleration that the I gain will generate
-    // @Range: 0 500
-    // @Units: cm/s/s
-    // @User: Standard
-
-    // @Param: THR_ALT_CRUISE_D
-    // @DisplayName: Throttle altitude controller D gain
-    // @Description: Throttle altitude controller D gain.  Compensates for short-term change in desired altitude vs actual altitude
-    // @Range: 0.000 0.400
-    // @User: Standard
-    GGROUP(pid_throttle_alt_cruise, "THR_ALT_CRUISE_", AC_PID), // (04/03/2014-Menno)
+//    // @Param: THR_ALT_CRUISE_P
+//    // @DisplayName: Throttle altitude controller P gain
+//    // @Description: Throttle altitude controller P gain.  Converts the difference between desired vertical speed and actual speed into a desired acceleration that is passed to the throttle acceleration controller
+//    // @Range: 1.000 8.000
+//    // @User: Standard
+//
+//    // @Param: THR_ALT_CRUISE_I
+//    // @DisplayName: Throttle altitude controller I gain
+//    // @Description: Throttle altitude controller I gain.  Corrects long-term difference in desired altitude and actual altitude
+//    // @Range: 0.000 0.100
+//    // @User: Standard
+//
+//    // @Param: THR_ALT_CRUISE_IMAX
+//    // @DisplayName: Throttle altitude controller I gain maximum
+//    // @Description: Throttle altitude controller I gain maximum.  Constrains the desired acceleration that the I gain will generate
+//    // @Range: 0 500
+//    // @Units: cm/s/s
+//    // @User: Standard
+//
+//    // @Param: THR_ALT_CRUISE_D
+//    // @DisplayName: Throttle altitude controller D gain
+//    // @Description: Throttle altitude controller D gain.  Compensates for short-term change in desired altitude vs actual altitude
+//    // @Range: 0.000 0.400
+//    // @User: Standard
+//    GGROUP(pid_throttle_alt_cruise, "THR_ALT_CRUISE_", AC_PID), // (04/03/2014-Menno)
     
-    // @Param: PCH_ALT_CRUISE_P
+    // @Param: PCH_CRUISE_RATE_P
     // @DisplayName: Pitch climb rate controller P gain
     // @Description: Pitch climb rate controller P gain.  Converts the difference between desired vertical speed and actual speed into a desired acceleration that is passed to the throttle acceleration controller
     // @Range: 1.000 8.000
     // @User: Standard
 
-    // @Param: PCH_ALT_CRUISE_I
+    // @Param: PCH_CRUISE_RATE_I
     // @DisplayName: Pitch climb rate controller I gain
     // @Description: Pitch climb rate controller I gain.  Corrects long-term difference in desired vertical speed and actual speed
     // @Range: 0.000 0.100
     // @User: Standard
 
-    // @Param: PCH_ALT_CRUISE_IMAX
+    // @Param: PCH_CRUISE_RATE_IMAX
     // @DisplayName: Pitch climb rate controller I gain maximum
     // @Description: Pitch climb rate controller I gain maximum.  Constrains the desired acceleration that the I gain will generate
     // @Range: 0 500
     // @Units: cm/s/s
     // @User: Standard
 
-    // @Param: PCH_ALT_CRUISE_D
+    // @Param: PCH_CRUISE_RATE_D
     // @DisplayName: Pitch climb rate controller D gain
     // @Description: Pitch climb rate controller D gain.  Compensates for short-term change in desired vertical speed vs actual speed
     // @Range: 0.000 0.400
     // @User: Standard
-    GGROUP(pid_pitch_alt_cruise, "PCH_ALT_CRUISE_", AC_PID), // (04/03/2014-Menno)
+    GGROUP(pid_pitch_cruise_rate, "PCH_CRUISE_RATE_", AC_PID), // (04/03/2014-Menno)
 
     // PI controller
     //--------------

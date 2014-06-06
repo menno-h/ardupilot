@@ -197,7 +197,7 @@ const int16_t OPTIMAL_ANGLE_OF_ATTACK = 700; // (02/03/2014-Menno) // in centide
 const int16_t CRUISE_PITCH_FF_CST = OPTIMAL_ANGLE_OF_ATTACK; // (02/03/2014-Menno)
 const int16_t CRUISE_PITCH_FF_P = 1300; // (02/03/2014-Menno) // centidegrees per m/s
 static void 
-get_cruise_pitch(int32_t target_altitude, int16_t target_climb_rate, int16_t actual_climb_rate){// (26/02/2014-Menno) 
+get_pitch_cruise(int32_t target_altitude, int16_t target_climb_rate, int16_t actual_climb_rate){// (26/02/2014-Menno) 
       // local variables
       int32_t ff;
       int32_t fb;
@@ -241,17 +241,17 @@ get_cruise_pitch(int32_t target_altitude, int16_t target_climb_rate, int16_t act
 int32_t get_cruise_climb_rate_pitch_feedback(int16_t climb_rate_error) {   // (02/03/2014-Menno)
   
     // call pid controller
-    int32_t p = g.pid_pitch_alt_cruise.get_p(climb_rate_error); //(xxx)
+    int32_t p = g.pid_pitch_cruise_rate.get_p(climb_rate_error); // climb_rate_error in cm/s
 
     // get i term
-    int32_t i = g.pid_pitch_alt_cruise.get_integrator();
+    int32_t i = g.pid_pitch_cruise_rate.get_integrator();
 
     // update i term as long as we haven't breached the limits or the I term will certainly reduce
     if ((i>0&&climb_rate_error<0)||(i<0&&climb_rate_error>0)) {
-        i = g.pid_pitch_alt_cruise.get_i(climb_rate_error, G_Dt);
+        i = g.pid_pitch_cruise_rate.get_i(climb_rate_error, G_Dt);
     }
 
-    int32_t d = g.pid_pitch_alt_cruise.get_d(climb_rate_error, G_Dt);
+    int32_t d = g.pid_pitch_cruise_rate.get_d(climb_rate_error, G_Dt);
     int32_t output = p + i + d;
      
     // output control
@@ -552,11 +552,22 @@ get_pitch_rate_stabilized_ef(int32_t stick_angle)
 
 // Convert radio signal to desired yaw used in quaternion yaw control // (11/03/2014-Menno)
 static void
-get_pilot_desired_yaw(int32_t stick_angle, int8_t yaw_lock_enabled)
+get_pilot_desired_yaw(float stick_angle, int8_t yaw_lock_enabled)
 {
     int32_t angle_error = 0;
-    // convert the input to the desired yaw rate
-    int32_t target_rate = stick_angle * g.acro_yaw_p;
+    float target_rate = 0;
+    // convert the input to the desired yaw rated
+    if (control_mode==CRUISE){
+      stick_angle = stick_angle*g.cruise_turning;
+      if (transition_to_cruise==true){stick_angle=0;}
+      target_rate = 180/PI*stick_angle*g.cruise_speed*g.cruise_curvature*100;
+      menno7 = stick_angle*1000;
+      menno8 = target_rate;
+      target_rate = constrain_float(target_rate,-1500,1500);
+    }
+    else{
+    target_rate = stick_angle * g.acro_yaw_p;}
+    
     desired_yaw_rate_quaternion = target_rate;  // desired_yaw_rate_quaternion is used in get_stabilize_quaternion to add to the yaw error
     
     // convert the input to the desired yaw rate
@@ -1207,7 +1218,7 @@ static int16_t get_pilot_desired_throttle(int16_t throttle_control)
 // without any deadzone at the bottom
 #define THROTTLE_IN_DEADBAND_TOP (THROTTLE_IN_MIDDLE+THROTTLE_IN_DEADBAND)  // top of the deadband
 #define THROTTLE_IN_DEADBAND_BOTTOM (THROTTLE_IN_MIDDLE-THROTTLE_IN_DEADBAND)  // bottom of the deadband
-static int16_t get_pilot_desired_climb_rate(int16_t throttle_control)
+static int16_t get_pilot_desired_climb_rate(int16_t throttle_control,int16_t max_climb_rate,int16_t max_descend_rate)
 {
     int16_t desired_rate = 0;
 
@@ -1222,10 +1233,10 @@ static int16_t get_pilot_desired_climb_rate(int16_t throttle_control)
     // check throttle is above, below or in the deadband
     if (throttle_control < THROTTLE_IN_DEADBAND_BOTTOM) {
         // below the deadband
-        desired_rate = (int32_t)g.pilot_velocity_z_max * (throttle_control-THROTTLE_IN_DEADBAND_BOTTOM) / (THROTTLE_IN_MIDDLE - g.thr_in_deadband);
+        desired_rate = (int32_t)max_climb_rate * (throttle_control-THROTTLE_IN_DEADBAND_BOTTOM) / (THROTTLE_IN_MIDDLE - g.thr_in_deadband);
     }else if (throttle_control > THROTTLE_IN_DEADBAND_TOP) {
         // above the deadband
-        desired_rate = (int32_t)g.pilot_velocity_z_max * (throttle_control-THROTTLE_IN_DEADBAND_TOP) / (THROTTLE_IN_MIDDLE - g.thr_in_deadband);
+        desired_rate = (int32_t)max_descend_rate * (throttle_control-THROTTLE_IN_DEADBAND_TOP) / (THROTTLE_IN_MIDDLE - g.thr_in_deadband);
     }else{
         // must be in the deadband
         desired_rate = 0;
@@ -1408,76 +1419,172 @@ get_throttle_althold_with_slew(int32_t target_alt, int16_t min_climb_rate, int16
 }
 
 
-
-// get_cruise_throttle  // (02/03/2014-Menno)
-// calculates throttle to be set in CRUISE flight mode
-// inspired by get_throttle_rate_stabilized
-const int16_t CRUISE_THRUST_FF_CST = 3; // feedforward constant in Newton (per motor)
-const int16_t CRUISE_THRUST_FF_P = 0.5;     // feedforward gain in Newton/(m/s) (=add 0.5N for a desired climb rate of +1m/s) (per motor)
-const int16_t THRUST_MAX_THROTTLE = 6; // Newton (per motor)
-#define ENABLE_OWN_THR_CONTROL ENABLED
+// get_cruise_pitch // (24/05/2014-Menno)
+// calculates throttle to be set in CRUISE flight mode (throttle purely feedforward)
 static void
-get_cruise_throttle(int32_t target_altitude, int16_t target_climb_rate){
+get_cruise_pitch(int16_t target_rate)
+{
   
-#if ENABLE_OWN_THR_CONTROL == DISABLED
-  /////////////////////////////// 
-  // ORIGINAL ALT HOLD CONTROL //
-  
-  // update target altitude for reporting purposes
-  set_target_alt_for_reporting(target_altitude);
-  
-  get_throttle_althold(target_altitude, -CRUISE_CLIMB_RATE_DN_MAX*100-100, CRUISE_CLIMB_RATE_UP_MAX*100+100);   // 100 is added to give head room to alt hold controller
-  
-  
-#else
-  //////////////////////////
-  // OWN ALT HOLD CONTROL //
-  
-   // local variables
-  int16_t fb;  // Throttle 0-1000
-  
-  // feedforward of thrust (throttle)
-  int16_t ff = CRUISE_THRUST_FF_CST/THRUST_MAX_THROTTLE*AP_MOTORS_DEFAULT_MAX_THROTTLE + CRUISE_THRUST_FF_P/THRUST_MAX_THROTTLE*AP_MOTORS_DEFAULT_MAX_THROTTLE*target_climb_rate; // Throttle 0-1000
-  
-  // feedback of thrust
-  if (target_climb_rate >= 0){
-    int16_t alt_error = target_altitude - baro_alt/100;
-    fb = get_cruise_alt_throttle_feedback(alt_error)/THRUST_MAX_THROTTLE*AP_MOTORS_DEFAULT_MAX_THROTTLE;
-  }
-  else {
-    fb = 0;
-  }
-  
-  // fb = 0; // insert this line if you want to remove the throttle controller action
-
-  int16_t desired_throttle = constrain_int16(ff + fb , AP_MOTORS_DEFAULT_MIN_THROTTLE , AP_MOTORS_DEFAULT_MAX_THROTTLE);    // Newton
-  
-  // pass throttle to the motors
-  set_throttle_out(desired_throttle,false);
-  
-#endif
-}
-
-// get_cruise_alt_throttle_feedback // (02/03/2014-Menno)
-int32_t get_cruise_alt_throttle_feedback(int32_t alt_error) {
-  
-   // call pid controller
-    int32_t p = g.pid_throttle_alt_cruise.get_p(alt_error);
-
-    // get i term
-    int32_t i = g.pid_throttle_alt_cruise.get_integrator();
-
-    // update i term as long as we haven't breached the limits or the I term will certainly reduce
-    if ((i>0&&alt_error<0)||(i<0&&alt_error>0)) {
-        i = g.pid_throttle_alt_cruise.get_i(alt_error, G_Dt);
+    //////////////////////////////////////////////
+    // get_throttle_rate_stabilized starts here //
+    //////////////////////////////////////////////
+    
+    // adjust desired alt if motors have not hit their limits
+    if ((target_rate<0 && !motors.limit.throttle_lower) || (target_rate>0 && !motors.limit.throttle_upper)) {
+        controller_desired_alt += target_rate * G_Dt;
     }
 
-    int32_t d = g.pid_throttle_alt_cruise.get_d(alt_error, G_Dt);
-    int32_t output = p + i + d;
+    // do not let target altitude get too far from current altitude
+    controller_desired_alt = constrain_float(controller_desired_alt,current_loc.alt-500,current_loc.alt+500); // maximum 5meters below or above
 
-    // output control
-    return output;  
+#if AC_FENCE == ENABLED
+    // do not let target altitude be too close to the fence
+    // To-Do: add this to other altitude controllers
+    if((fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) != 0) {
+        float alt_limit = fence.get_safe_alt() * 100.0f;
+        if (controller_desired_alt > alt_limit) {
+            controller_desired_alt = alt_limit;
+            target_rate = 0;
+        }
+    }
+#endif
+
+//    menno7 = controller_desired_alt; // TODO: delete, for debugging only
+//    menno8 = current_loc.alt;
+    
+    // update target altitude for reporting purposes
+    set_target_alt_for_reporting(controller_desired_alt);
+
+    /////////////////////////////////////
+    // get_throttle_althold starts here //
+    /////////////////////////////////////
+   
+    int32_t alt_error;
+    float desired_rate;
+    int32_t linear_distance;      // half the distace we swap between linear and sqrt and the distace we offset sqrt.
+
+    // calculate altitude error
+    alt_error    = controller_desired_alt - current_loc.alt;
+    
+    // update altitude error reported to GCS
+    altitude_error = alt_error;
+    
+    // pitch controller altitude error component
+    float alt_error_climb_rate = alt_error*g.pitch_cruise_alt_p;
+    
+    
+//    // check kP to avoid division by zero
+//    if( g.pi_alt_hold.kP() != 0 ) {
+//        linear_distance = ALT_HOLD_ACCEL_MAX/(2*g.pi_alt_hold.kP()*g.pi_alt_hold.kP());
+//        if( alt_error > 2*linear_distance ) {
+//            desired_rate = safe_sqrt(2*ALT_HOLD_ACCEL_MAX*(alt_error-linear_distance));
+//        }else if( alt_error < -2*linear_distance ) {
+//            desired_rate = -safe_sqrt(2*ALT_HOLD_ACCEL_MAX*(-alt_error-linear_distance));
+//        }else{
+//            desired_rate = g.pi_alt_hold.get_p(alt_error);
+//        }
+//    }else{
+//        desired_rate = 0;
+//    }
+//    // If you plot the graph of desired_rate with respect alt_error it would be 
+//    // linear between -2*linear_distance and 2*linear_distance, but
+//    // invers quadratic beyond those points
+//
+//    desired_rate = constrain_float(desired_rate, -g.cruise_climb_rate_max-250, g.cruise_descend_rate_max+250);
+//    controller_desired_climb_rate = desired_rate;
+    
+    // pitch controller reference climb rate - arcsine of climb rate over airspeed
+    controller_desired_climb_rate = target_rate + alt_error_climb_rate;
+    float temp = asin(controller_desired_climb_rate/g.cruise_speed);
+    temp = ToDeg(temp)*100; // conversion to centidegrees
+    float pitch_climb_rate_ff = constrain_float(temp,-2000,2000);
+    
+    // PID control of climb rate
+    float rate_error = controller_desired_climb_rate - climb_rate; // rate error is in cm/s
+    float pid_pitch = get_cruise_climb_rate_pitch_feedback(rate_error);  // output pid_pitch in centidegrees
+    pid_pitch = constrain_float(pid_pitch, -1000, 1000);
+
+    
+    // control_pitch reference
+    control_pitch = constrain_int16(-9000 + pid_pitch + pitch_climb_rate_ff + g.cruise_AoA - g.rigging_angle, -12000, -4000);
+    
+    // switch mode if reference pitch is out of bounds
+    if (control_pitch == -12000 || control_pitch == -4000 || pid_pitch == -1000 || pid_pitch == 1000){
+      set_mode(STABLE_QUAT);
+    }
+
 }
+
+
+//// get_cruise_throttle  // (02/03/2014-Menno)
+//// calculates throttle to be set in CRUISE flight mode
+//// inspired by get_throttle_rate_stabilized
+//const int16_t CRUISE_THRUST_FF_CST = 3; // feedforward constant in Newton (per motor)
+//const int16_t CRUISE_THRUST_FF_P = 0.5;     // feedforward gain in Newton/(m/s) (=add 0.5N for a desired climb rate of +1m/s) (per motor)
+//const int16_t THRUST_MAX_THROTTLE = 6; // Newton (per motor)
+//#define ENABLE_OWN_THR_CONTROL ENABLED
+//static void
+//get_cruise_throttle(int32_t target_altitude, int16_t target_climb_rate){
+//  
+//#if ENABLE_OWN_THR_CONTROL == DISABLED
+//  /////////////////////////////// 
+//  // ORIGINAL ALT HOLD CONTROL //
+//  
+//  // update target altitude for reporting purposes
+//  set_target_alt_for_reporting(target_altitude);
+//  
+//  get_throttle_althold(target_altitude, -CRUISE_CLIMB_RATE_DN_MAX*100-100, CRUISE_CLIMB_RATE_UP_MAX*100+100);   // 100 is added to give head room to alt hold controller
+//  
+//  
+//#else
+//  //////////////////////////
+//  // OWN ALT HOLD CONTROL //
+//  
+//   // local variables
+//  int16_t fb;  // Throttle 0-1000
+//  
+//  // feedforward of thrust (throttle)
+//  int16_t ff = CRUISE_THRUST_FF_CST/THRUST_MAX_THROTTLE*AP_MOTORS_DEFAULT_MAX_THROTTLE + CRUISE_THRUST_FF_P/THRUST_MAX_THROTTLE*AP_MOTORS_DEFAULT_MAX_THROTTLE*target_climb_rate; // Throttle 0-1000
+//  
+//  // feedback of thrust
+//  if (target_climb_rate >= 0){
+//    int16_t alt_error = target_altitude - baro_alt/100;
+//    fb = get_cruise_alt_throttle_feedback(alt_error)/THRUST_MAX_THROTTLE*AP_MOTORS_DEFAULT_MAX_THROTTLE;
+//  }
+//  else {
+//    fb = 0;
+//  }
+//  
+//  // fb = 0; // insert this line if you want to remove the throttle controller action
+//
+//  int16_t desired_throttle = constrain_int16(ff + fb , AP_MOTORS_DEFAULT_MIN_THROTTLE , AP_MOTORS_DEFAULT_MAX_THROTTLE);    // Newton
+//  
+//  // pass throttle to the motors
+//  set_throttle_out(desired_throttle,false);
+//  
+//#endif
+//}
+//
+//// get_cruise_alt_throttle_feedback // (02/03/2014-Menno)
+//int32_t get_cruise_alt_throttle_feedback(int32_t alt_error) {
+//  
+//   // call pid controller
+//    int32_t p = g.pid_throttle_alt_cruise.get_p(alt_error);
+//
+//    // get i term
+//    int32_t i = g.pid_throttle_alt_cruise.get_integrator();
+//
+//    // update i term as long as we haven't breached the limits or the I term will certainly reduce
+//    if ((i>0&&alt_error<0)||(i<0&&alt_error>0)) {
+//        i = g.pid_throttle_alt_cruise.get_i(alt_error, G_Dt);
+//    }
+//
+//    int32_t d = g.pid_throttle_alt_cruise.get_d(alt_error, G_Dt);
+//    int32_t output = p + i + d;
+//
+//    // output control
+//    return output;  
+//}
 
 
 // get_throttle_rate_stabilized - rate controller with additional 'stabilizer'
@@ -1490,10 +1597,9 @@ get_throttle_rate_stabilized(int16_t target_rate)
     if ((target_rate<0 && !motors.limit.throttle_lower) || (target_rate>0 && !motors.limit.throttle_upper)) {
         controller_desired_alt += target_rate * 0.02f;
     }
-    menno6 = controller_desired_alt; // TODO: delete, for debugging only
     // do not let target altitude get too far from current altitude
     controller_desired_alt = constrain_float(controller_desired_alt,current_loc.alt-750,current_loc.alt+750);
-
+        
 #if AC_FENCE == ENABLED
     // do not let target altitude be too close to the fence
     // To-Do: add this to other altitude controllers
@@ -1505,6 +1611,9 @@ get_throttle_rate_stabilized(int16_t target_rate)
     }
 #endif
 
+//    menno7 = controller_desired_alt; // TODO: delete, for debugging only
+//    menno8 = current_loc.alt;
+    
     // update target altitude for reporting purposes
     set_target_alt_for_reporting(controller_desired_alt);
 

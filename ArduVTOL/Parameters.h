@@ -102,12 +102,24 @@ public:
         k_param_roll_input_max, // (23/03/2014-Menno)
         k_param_pitch_input_max, // (23/03/2014-Menno)
         k_param_cruise_turning, // (25/03/2014-Menno) // 0 if taking turns is disabled in CRUISE, 1 if taking turns is enabled
+        k_param_cruise_curvature, // (25/03/2014-Menno) // maximal curvature radius for taking turns
         
-        k_param_quaternion_alt_hold, // (25/03/2014-Menno)
+        k_param_quaternion_alt_hold_type, // (25/03/2014-Menno)
         k_param_yaw_lock, // (18/05/2014-Menno)
         k_param_cruise_AoA, // (18/05/2014-Menno)
+        k_param_rigging_angle, // (24/05/2014-Menno)
+        k_param_cruise_speed, // (24/05/2014-Menno)
         k_param_transition_time, // (18/05/2014-Menno)
         k_param_transition_time2, // (21/05/2014-Menno)
+        k_param_cruise_climb_rate_max,//(24/05/2014-Menno)
+        k_param_cruise_descend_rate_max, //(24/05/2014-Menno)
+        
+        k_param_throttle_ff_a, // (24/05/2014-Menno)
+        k_param_throttle_ff_b, // (24/05/2014-Menno)
+        k_param_pitch_cruise_ff_a, // (24/05/2014-Menno)
+        k_param_pitch_cruise_ff_b, // (24/05/2014-Menno)
+        
+        k_param_pitch_cruise_alt_p, // (24/05/2014-Menno)
         
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove
@@ -295,8 +307,8 @@ public:
         //
         // USER PID Controllers
         //
-        k_param_pid_throttle_alt_cruise, // (04/03/2014-Menno)
-        k_param_pid_pitch_alt_cruise,    // (04/03/2014-Menno)
+        //k_param_pid_throttle_alt_cruise, // (04/03/2014-Menno)
+        k_param_pid_pitch_cruise_rate,    // (04/03/2014-Menno)
         
         // 254,255: reserved
     };
@@ -345,12 +357,22 @@ public:
     AP_Int16        roll_input_max;             // roll input range // (23/03/2014-Menno)
     AP_Int16        pitch_input_max;            // pitch input range // (23/03/2014-Menno)
     AP_Int16        cruise_turning;             // (25/03/2014-Menno) //  0 if taking turns is disabled in CRUISE, 1 if taking turns is enabled
-    AP_Int8         quaternion_alt_hold;        // (01/04/2014-Menno) // 0 if no altitude hold, 1 if altitude hold is on // can only be changed if you leave the flightmode and then go back to that flightmode
+    AP_Float        cruise_curvature;           // (25/03/2014-Menno) // maximal curvature radius for taking turns
+    AP_Int8         quaternion_alt_hold_type;        // (01/04/2014-Menno) // 0 if no altitude hold, 1 if altitude hold is on // can only be changed if you leave the flightmode and then go back to that flightmode
     AP_Int8         yaw_lock;                   // (18/05/2014-Menno) // 0 no yaw lock, 1 yaw lock
     AP_Float        cruise_AoA;                 // (18/05/2014-Menno) // desired angle of attack in Cruise flight mode
+    AP_Float        rigging_angle;              // (24/05/2014-Menno) // rigging angle of wing
+    AP_Int16        cruise_speed;               // (24/05/2014-Menno) // desired airspeed in Cruise flight mode
     AP_Float        transition_time;            // (18/05/2014-Menno) // time to perform transition to cruise in seconds
-    AP_Float        transition_time2;            // (21/05/2014-Menno) // time to perform transition to hover in seconds
+    AP_Float        transition_time2;           // (21/05/2014-Menno) // time to perform transition to hover in seconds
+    AP_Int16        cruise_climb_rate_max;      // (24/05/2014-Menno)
+    AP_Int16        cruise_descend_rate_max;    // (24/05/2014-Menno)
     
+    AP_Float        throttle_ff_a;               // (24/05/2014-Menno) // Throttle feedforward in Cruise fligth mode (pilot desired climb rate dependend)
+    AP_Float        throttle_ff_b;               // (24/05/2014-Menno) // Throttle feedforward in Cruise fligth mode
+    AP_Float        pitch_cruise_ff_a;           // (24/05/2014-Menno) // Pitch feedforward in Cruise fligth mode corresponding to climb input [centidegrees/cm/s]
+    AP_Float        pitch_cruise_ff_b;           // (24/05/2014-Menno) // Pitch feedforward in Cruise fligth mode corresponding to yaw input [s]
+    AP_Float        pitch_cruise_alt_p;          // (24/05/2014-Menno)// converts altitude error into reference climb_rate
     // Waypoints
     //
     AP_Int8         command_total;
@@ -447,8 +469,8 @@ public:
     AC_PID                  pid_optflow_roll;
     AC_PID                  pid_optflow_pitch;
     
-    AC_PID                  pid_throttle_alt_cruise;      // (04/03/2014-Menno)
-    AC_PID                  pid_pitch_alt_cruise;         // (04/03/2014-Menno)
+    //AC_PID                  pid_throttle_alt_cruise;      // (04/03/2014-Menno)
+    AC_PID                  pid_pitch_cruise_rate;         // (04/03/2014-Menno)
 
     APM_PI                  pi_loiter_lat;
     APM_PI                  pi_loiter_lon;
@@ -506,8 +528,8 @@ public:
         pid_optflow_roll        (OPTFLOW_ROLL_P,        OPTFLOW_ROLL_I,         OPTFLOW_ROLL_D,         OPTFLOW_IMAX),
         pid_optflow_pitch       (OPTFLOW_PITCH_P,       OPTFLOW_PITCH_I,        OPTFLOW_PITCH_D,        OPTFLOW_IMAX),
         
-        pid_throttle_alt_cruise (THR_ALT_CRUISE_P,      THR_ALT_CRUISE_I,       THR_ALT_CRUISE_D,       THR_ALT_CRUISE_IMAX),     // (04/03/2014-Menno)
-        pid_pitch_alt_cruise    (PCH_ALT_CRUISE_P,      PCH_ALT_CRUISE_I,       PCH_ALT_CRUISE_D,       PCH_ALT_CRUISE_IMAX),     // (04/03/2014-Menno)
+        //pid_throttle_alt_cruise (THR_ALT_CRUISE_P,      THR_ALT_CRUISE_I,       THR_ALT_CRUISE_D,       THR_ALT_CRUISE_IMAX),     // (04/03/2014-Menno)
+        pid_pitch_cruise_rate   (PCH_CRUISE_RATE_P,     PCH_CRUISE_RATE_I,      PCH_CRUISE_RATE_D,      PCH_CRUISE_RATE_IMAX),     // (04/03/2014-Menno)
 
         // PI controller	initial P			initial I			initial
         // imax

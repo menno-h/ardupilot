@@ -304,12 +304,12 @@ struct PACKED log_Control_Tuning {
     int16_t  throttle_in;
     int16_t  angle_boost;
     int16_t  throttle_out;
-    float    desired_alt;
+    float    desired_alt; // is controller_desired_alt
     float    inav_alt;
     int32_t  baro_alt;
     int16_t  desired_sonar_alt;
     int16_t  sonar_alt;
-    int16_t  desired_climb_rate;
+    int16_t  desired_climb_rate; // is pilot_climb_rate (not controller_desired_climb_rate), this target can be changed in controller, so don't compare desired_climb_rate to climb_rate
     int16_t  climb_rate;
 };
 

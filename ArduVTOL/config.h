@@ -701,7 +701,7 @@
 #endif
 
 #ifndef CRUISE_THR
- # define CRUISE_THR           	    THROTTLE_MANUAL
+ # define CRUISE_THR           	    THROTTLE_HOLD
 #endif
 
 // Stabilize_quat Mode // (11/03/2014-Menno)
@@ -714,7 +714,7 @@
 #endif
 
 #ifndef STABLE_QUAT_THR
- # define STABLE_QUAT_THR           	    THROTTLE_MANUAL
+ # define STABLE_QUAT_THR           	    THROTTLE_STABLE_QUAT
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -736,17 +736,17 @@
 #endif
 
 // Climb rate pitch gains
-#ifndef PCH_ALT_CRUISE_P
- # define PCH_ALT_CRUISE_P       		0.150f
+#ifndef PCH_CRUISE_RATE_P
+ # define PCH_CRUISE_RATE_P       		1.0f
 #endif
-#ifndef PCH_ALT_CRUISE_I
- # define PCH_ALT_CRUISE_I       		0.100f
+#ifndef PCH_CRUISE_RATE_I
+ # define PCH_CRUISE_RATE_I       		0.1f
 #endif
-#ifndef PCH_ALT_CRUISE_D
- # define PCH_ALT_CRUISE_D       		0.004f
+#ifndef PCH_CRUISE_RATE_D
+ # define PCH_CRUISE_RATE_D       		0.1f
 #endif
-#ifndef PCH_ALT_CRUISE_IMAX
- # define PCH_ALT_CRUISE_IMAX        	500
+#ifndef PCH_CRUISE_RATE_IMAX
+ # define PCH_CRUISE_RATE_IMAX        	1
 #endif
 
 
@@ -966,8 +966,8 @@
 #endif
 
 // default maximum vertical velocity the pilot may request
-#ifndef PILOT_VELZ_MAX
- # define PILOT_VELZ_MAX    250     // maximum vertical velocity in cm/s
+#ifndef DEFAULT_PILOT_VELZ_MAX
+ # define DEFAULT_PILOT_VELZ_MAX    250     // maximum vertical velocity in cm/s
 #endif
 
 // max distance in cm above or below current location that will be used for the alt target when transitioning to alt-hold mode
