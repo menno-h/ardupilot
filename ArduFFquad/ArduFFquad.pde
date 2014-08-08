@@ -560,9 +560,11 @@ static int16_t counter_failsafe;               // (24/05/2014-Menno) // if plane
 // set initial quaternion
 Quaternion initial_quaternion;              // (11/03/2014-Menno) // used as initial reference when entering STABLE_QUAT mode           
 Quaternion control_quaternion;
+Quaternion pre_control_quaternion;
 Quaternion control_quaternion_bis;
 Quaternion current_quaternion;
 Quaternion inverse_current_quaternion;
+Quaternion pre_rotate_quaternion;
 Quaternion rotate_quaternion;
 Quaternion rotate_quaternion_bis;
 Quaternion error_quaternion;
@@ -1098,9 +1100,9 @@ static void fast_loop()
     update_yaw_mode();
     update_roll_pitch_mode();
     
-    //menno1 = control_roll; // centidegrees
-    //menno2 = control_pitch; // centidegrees
-    //menno3 = control_yaw; // centidegrees
+    //menno4 = control_roll; // centidegrees
+    //menno5 = control_pitch; // centidegrees
+    //menno6 = control_yaw; // centidegrees
 //    menno4 = desired_yaw_rate_quaternion; // centidegrees/s //TODO: uncomment
     
     if (control_mode == STABLE_QUAT || control_mode == CRUISE ){ // (11/03/2014-Menno)
@@ -1109,9 +1111,9 @@ static void fast_loop()
       update_quaternion();
     }
  
-//    menno7 = roll_rate_target_bf;
-//    menno8 = pitch_rate_target_bf;
-//    menno9 = yaw_rate_target_bf;
+    menno7 = roll_rate_target_bf;
+    menno8 = pitch_rate_target_bf;
+    menno9 = yaw_rate_target_bf;
 
     // update targets to rate controllers
     update_rate_contoller_targets(); 
@@ -1335,12 +1337,12 @@ static void read_airspeed(void) // (01/08/2014-Menno) // Originally (in AP:Plane
 
 // once a second update the airspeed calibration ratio
 static void airspeed_ratio_update(void) // (01/08/2014-Menno)
-{
+{   
     if (!airspeed.enabled() ||
         g_gps->status() < GPS::GPS_OK_FIX_3D ||
         g_gps->ground_speed_cm < 400) {
         // don't calibrate when not moving
-        menno1=2;
+        //menno1=7; // TODO: delete
         return;        
     }
     if (airspeed.get_airspeed() < aparm.airspeed_min && 
@@ -1349,7 +1351,7 @@ static void airspeed_ratio_update(void) // (01/08/2014-Menno)
         // check both airspeed and ground speed to catch cases where
         // the airspeed ratio is way too low, which could lead to it
         // never coming up again
-        menno1=3;
+        //menno2=7; // TODO: delete
         return;
     }
 //    if (abs(ahrs.roll_sensor) > roll_limit_cd || // TODO: adjust parameters to only update during forward flight
@@ -1361,7 +1363,7 @@ static void airspeed_ratio_update(void) // (01/08/2014-Menno)
     Vector3f vg = g_gps->velocity_vector();
     airspeed.update_calibration(vg);
     gcs_send_airspeed_calibration(vg);
-    menno1=4;
+    //menno3=7; // TODO: delete
 }
 
 static void zero_airspeed(void) // (05/08/2014-Menno)
@@ -1662,8 +1664,10 @@ void update_yaw_mode(void)
 //      control_cruise_curvature = get_cruise_curvature(g.rc_2.control_in);   //  translate pilot input to a curvature (1/m)                            
 //      get_cruise_yaw(control_cruise_curvature); // control copter yaw (airplane roll) to take a turn with radius equal to 1/control_cruise_curvature
         float pilot_input;
-        pilot_input = (float)g.rc_1.control_in / g.roll_input_max; // between 0 and 1
-        get_pilot_desired_yaw(pilot_input,1); // pilot_yaw is devided by 20 because yaw in forward flight is much slower. TODO: Tune this value with experiments. // (18/05/2014-Menno)
+//        pilot_input = (float)g.rc_1.control_in / g.roll_input_max; // between 0 and 1 // not used in FFquad
+        menno1 = pilot_input*(float)1000;
+//        get_pilot_desired_yaw(pilot_input,1); // pilot_yaw is devided by 20 because yaw in forward flight is much slower. TODO: Tune this value with experiments. // (18/05/2014-Menno)
+        get_pilot_desired_yaw(pilot_input,1); 
         break;}
         
     case YAW_STABLE_QUAT: // (11/03/2014-Menno)
@@ -1812,12 +1816,6 @@ void update_roll_pitch_mode(void)
         // pass desired roll, pitch to stabilize attitude controllers
         get_stabilize_roll(control_roll);
         get_stabilize_pitch(control_pitch);
-        
-//        menno1 = g.rc_1.control_in;
-//        menno2 = control_roll;
-//        menno3 = g.rc_1.control_in;
-//        menno4 = control_pitch;
-
         break;
 
     case ROLL_PITCH_AUTO:
@@ -1885,42 +1883,41 @@ void update_roll_pitch_mode(void)
             counter_trans = 0;} // reset counter
           else {counter_trans += 1;}
           
-          if (control_pitch <= -9000 + g.cruise_AoA - g.rigging_angle){
+          if (control_pitch <= - g.rigging_angle){
             transition_to_cruise = false;
             horizontal_flight = true;}
+          control_roll = 0;
         }
         else {
 
-          if (g.quaternion_alt_hold_type == 0){ // (25/05/2014-Menno)
-            int16_t pilot_climb_rate;
-            pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in,g.cruise_climb_rate_max,g.cruise_descend_rate_max);
-            control_pitch = -9000 + g.cruise_AoA - g.rigging_angle + constrain_int16(g.pitch_cruise_ff_b*abs(desired_yaw_rate_quaternion),0,1000);
-            menno9 = constrain_int16(g.pitch_cruise_ff_b*abs(desired_yaw_rate_quaternion),0,1000); // TODO: delete
-            if (pilot_climb_rate>0){
-              control_pitch = control_pitch + g.pitch_cruise_ff_a*pilot_climb_rate;}}
-          else {
-            int16_t pilot_climb_rate;
-            pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in,g.cruise_climb_rate_max,g.cruise_descend_rate_max);
-            get_cruise_pitch(pilot_climb_rate);}       
-        }
+          get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, control_roll, control_pitch);
           
-         control_roll = 0; // overwrite roll input if it was exidently given TODO: replace "control_roll=0;" by "control_plane_roll=constrain(plane_roll,-max_plane_roll,max_plane_roll);" and uncomment/complete lines below. // (18/05/2014-Menno)
+//          if (g.quaternion_alt_hold_type == 0){ // (25/05/2014-Menno)
+//            int16_t pilot_climb_rate;
+//            pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in,g.cruise_climb_rate_max,g.cruise_descend_rate_max);
+//            control_pitch = - g.rigging_angle + constrain_int16(g.pitch_cruise_ff_b*abs(desired_yaw_rate_quaternion),0,1000);
+//            if (pilot_climb_rate>0){
+//              control_pitch = control_pitch + g.pitch_cruise_ff_a*pilot_climb_rate;}}
+//          else {
+//            int16_t pilot_climb_rate;
+//            pilot_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in,g.cruise_climb_rate_max,g.cruise_descend_rate_max);
+//            get_cruise_pitch(pilot_climb_rate);}       
+        }
+         
+         // control_roll = 0; // in FFquad in should be able to do roll
          q2e_dcm = ahrs.get_dcm_matrix(); // quad body to earth dcm.
          p2e_dcm = q2e_dcm*p2q_dcm;
          p2e_dcm.to_euler(&plane_roll,&plane_pitch,&plane_yaw);
          plane_roll     = degrees(plane_roll)  * 100; // centidegrees
          plane_pitch    = degrees(plane_pitch) * 100;
          plane_yaw      = degrees(plane_yaw)   * 100;
-         //menno4 = plane_roll;
-         //menno5 = plane_pitch;
-         //menno6 = plane_yaw;
          if (plane_yaw < 0){
          plane_yaw += 36000;}
-         if (plane_pitch < 1000 || (horizontal_flight == true && abs(plane_roll)>3000)){
-           counter_failsafe += 1;
-           if (counter_failsafe == 50) {
-             set_mode(STABLE_QUAT);}}
-         else {counter_failsafe = 0;}
+//         if (plane_pitch < 1000 || (horizontal_flight == true && abs(plane_roll)>3000)){
+//           counter_failsafe += 1;
+//           if (counter_failsafe == 50) {
+//             set_mode(STABLE_QUAT);}}
+//         else {counter_failsafe = 0;}
         break;
         
     case ROLL_PITCH_STABLE_QUAT:  // (11/03/2014-Menno)
@@ -2327,34 +2324,23 @@ else {thr_mode = throttle_mode;}
 void update_quaternion(void) {
   
   // calculating reference quaternion (control_quaternion)
-  
+  menno6 = control_yaw;
   // convert from centidegrees to radians
   float rotate_roll_radians = DEG_TO_RAD*control_roll/100;
   float rotate_pitch_radians = DEG_TO_RAD*control_pitch/100;
   float rotate_yaw_radians = DEG_TO_RAD*control_yaw/100;
+  float rigging_angle_radians = DEG_TO_RAD*(-g.rigging_angle)/100;
   
-//  if (control_pitch <= 6000){
+  to_quaternion(0,rigging_angle_radians,0, pre_rotate_quaternion);
   to_quaternion(rotate_roll_radians, rotate_pitch_radians, rotate_yaw_radians, rotate_quaternion);
 
+  if (horizontal_flight == true && transition_to_cruise== false){
+  quaternion_multiply(initial_quaternion, pre_rotate_quaternion, pre_control_quaternion);
+  quaternion_multiply(rotate_quaternion, pre_control_quaternion, control_quaternion);}
+  else {
   quaternion_multiply(initial_quaternion, rotate_quaternion, control_quaternion);
-  
-//}
-  
-//  else {
-//  to_quaternion(0, rotate_pitch_radians, rotate_yaw_radians, rotate_quaternion);
-//  quaternion_multiply(initial_quaternion, rotate_quaternion,control_quaternion);
-//      
-//      to_quaternion(rotate_roll_radians, 0, 0, rotate_quaternion_bis);
-//      quaternion_multiply(control_quaternion, rotate_quaternion_bis, control_quaternion_bis);
-//      quaternion_copy(control_quaternion_bis, control_quaternion);
-//      
-//      
-//      // to_quaternion(0, 0, rotate_roll_radians, rotate_quaternion_bis);
-//      // quaternion_multiply(control_quaternion, rotate_quaternion_bis, control_quaternion_bis);
-//      // quaternion_copy(control_quaternion_bis, control_quaternion);
-//       
-//  }
-  
+  }
+
   // setting rate targets
   get_stabilize_quaternion();
   

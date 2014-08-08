@@ -1,0 +1,95 @@
+ArduVTOL_v4: Flightmode CRUISE quaternion gebaseerd maken.
+ArduVTOL code gebaseerd op AC:3.1.2
+
+-26/02/2014-defines.h;config.h;system.pde;Parameters.pde-toevoeging flight mode "CRUISE" (still need to add required initialisation when entering mode in system.pde)
+
+-26/02/2014-defines.h;config.h;ArduCopter.pde;Attitude.pde;navigation.pde-toevoeging van nav_mode "NAV_CRUISE" (for now copied from NAV_NONE)
+-26/02/2014-defines.h;config.h;ArduCopter.pde;Attitude.pde-toevoeging roll_pitch mode "ROLL_PITCH_CRUISE"
+-26/02/2014-defines.h;config.h;ArduCopter.pde;Attitude.pde-toevoeging yaw mode "YAW_CRUISE"
+-26/02/2014-defines.h;config.h;ArduCopter.pde;Attitude.pde-toevoeging throttle mode "THROTTLE_CRUISE"
+
+-28/02/2014--creation of _v2
+-28/02/2014-defines.h;config.h;AruVTOL_v2.pde;Attitude.pde;navigation.pde-verwijderen van NAV_CRUISE
+-28/02/2014-defines.h;config.h;system.pde-kleine aanpassingenin CRUISE flight mode
+-28/02/2014-defines.h;config.h;AruVTOL_v2.pde;Attitude.pde-aanpassen roll_pitch, yaw en throttle modes
+ 
+-01/03/2014-system.pde-adding lines to set_mode() in system.pde. And defined two new parameters (CRUISE_PITCH_BAND_BEGIN, CRUISE_PITCH_BAND_END)
+-01/03/2014-ArduVTOL.pde-finishing of update_yaw_mode() 
+-01/03/2014-ArduVTOL.pde-finishing of update_roll_pitch_mode()
+-01/03/2014-UserCode.pde-Added user code to update control_cruise_climb_rate and control_cruise_altitude. And defined two new parameters (CRUISE_ALTITUDE_MIN, CRUISE_ATLTITUDE_MAX)
+
+-02/03/2014-ArduVTOL.pde-finish case THROTTLE_CRUISE in update_throttle_mode
+-02/03/2014-ArduVTOL.pde-finish case THROTTLE_CRUISE in set_throttle_mode
+-02/03/2014-Attitude.pde-finish get_cruise_climb_rate and defined two new parameters (CRUISE_CLIMB_RATE_UP_MAX, CRUISE_CLIMB_RATE_DN_MAX)
+-02/03/2014-Attitude.pde-finish get_cruise_curvature
+-02/03/2014-Attitude.pde-finish get_cruise_pitch
+-02/03/2014-Attitude.pde-finish get_cruise_throttle
+-02/03/2014-Attitude.pde-created get_cruise_climb_rate_pitch_feedback , still need to write code here
+-02/03/2014-Attitude.pde-created get_cruise_alt_throttle_feedback, still need to write code here
+-02/03/2014-Attitude.pde-get_cruise_roll() implemented to be able to take turns
+-02/03/2014-Attitude.pde-get_cruise_yaw() implemented to be able to take turns
+
+-04/03/2014-Parameters.h;Parameters.pde;config.h-Defined user parameters (pid values...)
+-04/03/2014-Attitude.pde-finishing get_cruise_alt_throttle_feedback and get_cruise_climb_rate_pitch_feedback
+
+-05/03/2014-Attitude.pde-add parameter CRUISE_YAW_FF_P
+-05/03/2014-Attitude.pde-defined CRUISE_YAW_FF_ENABLED to enable/disable yaw feedforward
+-05/03/2014-ArduVTOL.pde-defined CRUISE_IN_2D_ENABLED to enable/disable cruisin in 2d 
+-05/03/2014--succesful build of version 2
+
+-11/03/2014-defines.h;config.h;system.pde;Parameters.pde-toevoeging flight mode "STABLE_QUAT"
+-11/03/2014-defines.h;config.h;ArduCopter.pde-toevoeging roll_pitch mode "ROLL_PITCH_STABLE_QUAT"
+-11/03/2014-defines.h;config.h;ArduCopter.pde-toevoeging yaw mode "YAW_STABLE_QUAT"
+-11/03/2014-defines.h;config.h;ArduCopter.pde-toevoeging throttle mode "THROTTLE_STABLE_QUAT" (analoog aan THROTTLE_STABLE)
+-11/03/2014-ArduVTOL.pde-toevoegen call naar update_quaternion()
+-11/03/2014-ArduVTOL.pde-definieren van update_quaternion()
+-11/03/2014-system.pde-afwerken initialisatie in set_mode() bij flightmode STABLE_QUAT
+-11/03/2014-ArduVTOL.pde-afwerken van YAW_STABLE_QUAT in update_yaw_mode en set_yaw_mode
+-11/03/2014-ArduVTOL.pde-afwerken van ROLL_PITCH_QUAT in update_roll_pitch_mode en set_roll_pitch_mode
+-11/03/2014-ArduVTOL.pde-toevoegen van globale variable initial_quaternion en control_quaternion
+-11/03/2014-Attitude.pde-toevoegen van functie get_pilot_desired_yaw() gebruikt in update_quaternion() in ArduVTOL
+-11/03/2014-Attitude.pde-toevoegen van get_stabilize_quaternion()
+-11/03/2014-Attitude.pde-verondersteld dat target rates in get_stabilize_quaternion in body_frame zijn
+
+-13/03/2014-Attitude.pde-definitie van quaternion_multiply, quaternion_inverse, to_quaternion
+
+-17/03/2014-Config.h-Aanpassen ROLL_PITCH_INPUT_MAX en DEFAULT_ANGLE_MAX van 4500 naar 8000
+
+-20/03/2014-Attitude.pde-fout in get_stabilized_quaternion: float yaw_radians = ... was float pitch_radians...
+-20/03/2014-Attitude.pde-fout in get_stabilized_quaternion: input voor to_quaternion voor q_act was niet in radialen
+-20/03/2014-ArduVTOL.pde;Attitude.pde-variabele desired_yaw_rate_quaternion toegevoegd om toe te voegen aan target_yaw_rate in get_stabilize_quaternion
+
+-23/03/2014-config.h;Parameters.h;Parameters.pde;Attitude.pde-toevoegen van ROLL_INPUT_MAX (g.roll_input_max), PITCH_INPUT_MAX (g.pitch_input_max, DEFAULT_ROLL_INPUT_MAX EN DEFAULT_PITCH_INPUT_MAX
+-23/03/2014-Attitude.pde-aanpassen van get_pilot_desired_lean_angles() om roll en pitch apart te scaleren
+-23/03/2014-Attitude.pde;Parameters.h;Parameters.pde;config.h-toevoegen van THROTTLE_IN_DEADBAND (g.throttle_in_deadband), oorspronkelijke parameter is vervangen zodat hij in MP aan te passen is
+-23/03/2014-config.h;changed STABLE_QUAT_THR from THROTTLE_MANUAL to THROTTLE_HOLD so it holds altitude.
+
+-25/03/2014-Parameters.h;Parameters.pde;ArduVTOL.pde-toevoegen van CRUISE_TURNING om te bepalen of je een bocht neemt door te rollen of te gieren.
+-25/03/2014-Attitude.pde;ArduVTOL.pde-adding quaternion_copy function
+-25/03/2014-Config.h-changed CRUISE_THR from THROTTLE_CRUISE to THROTTLE_MANUAL
+
+ TODO: verander ROLL_PITCH_INPUT_MAX en DEFAULT_ANGLE_MAX terug naar 4500
+ TODO: check TODO in ArduVTOL.pde, Attitude.pde and system.pde
+ TODO: check variable type of quaternions used + fix pointer issue
+ TODO: check function to_quaternion, quaternion_inverse and quaternion_multiply
+ TODO: check if DEG_TO_RAD constant works in ArduVTOL.pde, Attitude.pde and system.pde
+ TODO: insert stabilize_gains in get_stabilize_quaternion
+
+
+ TODO: tune gains and ranges from get_cruise_alt_throttle_feedback and get_cruise_climb_rate_pitch_feedback (Parameters.h, Parameters.pde, config.h)
+ TODO: use update_throttle_cruise to dynamically change throttle feedforward in level flight
+ TODO: expect a problem with reference pitch < 90 degreesin get_cruise_pitch in Attitude.pde
+ TODO: expect a problem with correct yaw reading -> possible solution with different mounting
+ TODO: add rpm-thrust curve (or enable it in MP configuration)
+ TODO: measure max thrust etc, to update the parameters
+ TODO: reset pitch feedback integrator when v_ref==0 is rising in get_cruise_climb_rate_pitch_feedback in Attitude.pde
+ TODO: reset throttle feedback integrator when v_ref==0 is rising in get_cruise_alt_throttle_feedback in Attiude.pde
+
+ TODO: define user parameters...
+ TODO: possibly add millis() timer for integration to userhook_FastLoop() in UserCode
+ TODO: possibly do conversion between reference frames (turned -90degrees in pitch)
+ TODO: possibly switch to quaternion control (=implement simulink literaly)
+ TODO: possibility to remove inputs in get_cruise_yaw, .... because the variables are global ones
+ TODO: check if set_pitch_rate_target() in get_cruise_pitch() in Attidue.pde will bring the VTOL to the desired pitch
+ TODO: possibly change rate gains in get_cruise_roll, -pitch, -yaw to own gains CRUISE_ROLL_RATE_P, CRUISE_PITCH_RATE_P AND CRUISE_YAW_RATE_P
+ TODO: initialisation in set_throttle_mode, set_yaw_mode, set_roll_pitch_mode for CRUISE in ArduVTOL?

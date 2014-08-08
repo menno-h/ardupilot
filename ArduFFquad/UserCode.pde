@@ -59,14 +59,14 @@ void userhook_50Hz()
 #ifdef USERHOOK_2HZLOOP // (04/08/2014-Menno)
 void userhook_2Hz()
 {
-    airspeed_ratio_update;
+    airspeed_ratio_update();
 }
 #endif
 
 #ifdef USERHOOK_20HZLOOP // (04/08/2014-Menno)
 void userhook_20Hz()
 {
-    read_airspeed;
+    read_airspeed();
 }
 #endif
 

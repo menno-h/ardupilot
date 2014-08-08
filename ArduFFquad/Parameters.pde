@@ -552,7 +552,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(cruise_speed, "CRUISE_SPEED",      1200),  // default is 3000 (=6000 centidegrees quad pitch), but can be altered in MP // (18/05/2014-Menno)
 
     // @Param: CRUISE_TURNING
-    // @DisplayName: Enable taking turns in Cruise flight mode. Can be done during flight, without switching flightmode
+    // @DisplayName: Enable taking turns in Cruise flight mode. Can be done during flight, without switching flightmode // NOT used for FFquad
     // @Description: 0 = turning non available, 1 = turning available
     // @Range 0 1
     // @User: Advanced

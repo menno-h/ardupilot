@@ -540,7 +540,7 @@ static bool set_mode(uint8_t mode)
             // transition control
             transition_to_cruise = true;
             counter_trans = 0;
-            counter_trans_limit = g.transition_time/(9000-g.cruise_AoA + g.rigging_angle);  // number of centiseconds (loops) per degree (*100 conversion from cd to degrees, *1/0.01 conversion form seconds to centiseconds, i.e. one tick at 100Hz)
+            counter_trans_limit = g.transition_time/(g.rigging_angle);  // number of centiseconds (loops) per degree (*100 conversion from cd to degrees, *1/0.01 conversion form seconds to centiseconds, i.e. one tick at 100Hz)
             counter_trans_limit = counter_trans_limit*100/0.01;
             
             // control initialisation
@@ -563,12 +563,12 @@ static bool set_mode(uint8_t mode)
             // transition control and control initialisation
             if(horizontal_flight == true){
             transition_from_cruise = true;
-            counter_trans_limit = g.transition_time2/(9000-g.cruise_AoA + g.rigging_angle);  // number of centiseconds (loops) per degree (*100 conversion from cd to degrees, *1/0.01 conversion form seconds to centiseconds, i.e. one tick at 100Hz)
+            counter_trans_limit = g.transition_time2/(g.rigging_angle);  // number of centiseconds (loops) per degree (*100 conversion from cd to degrees, *1/0.01 conversion form seconds to centiseconds, i.e. one tick at 100Hz)
             counter_trans_limit = counter_trans_limit*100/0.01;
             counter_trans = 0;
-            control_pitch = -9000 + g.cruise_AoA - g.rigging_angle; // (20/05/2014-Menno) smooth trasition back from Cruise to Stabilize
+            control_pitch = -g.rigging_angle; // (20/05/2014-Menno) smooth trasition back from Cruise to Stabilize
             control_roll = 0;
-            control_yaw = plane_yaw;
+            control_yaw = ahrs.yaw_sensor;
             // TODO: set control_yaw to plane_yaw;
             }
             else {

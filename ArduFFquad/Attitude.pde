@@ -14,20 +14,7 @@ static void reset_roll_pitch_in_filters(int16_t roll_in, int16_t pitch_in)
 // get_pilot_desired_angle - transform pilot's roll or pitch input into a desired lean angle
 // returns desired angle in centi-degrees
 static void get_pilot_desired_lean_angles(int16_t roll_in, int16_t pitch_in, int16_t &roll_out, int16_t &pitch_out)
-{
-    airspeed_ratio_update();
-    read_airspeed();
-    
-    float aspeed;
-    if (ahrs.airspeed_estimate(&aspeed)){
-      menno7=7;}
-    else {menno7=14;}
-    
-    menno8 = aspeed*(float)1000;
-    menno4 = airspeed.get_raw_airspeed()*(float)1000;
-    menno5 = airspeed.get_airspeed_cm()*(float)1000;
-    menno6 = airspeed.get_airspeed()*(float)1000;
-    
+{    
     static float _scaler_roll = 1.0;
     static float _scaler_pitch = 1.0;
     static int16_t _angle_max = 0;
@@ -189,7 +176,7 @@ get_stabilize_quaternion(void)
   
   int32_t target_rate_roll = g.pi_stabilize_roll.kP()*error_roll;
   int32_t target_rate_pitch = g.pi_stabilize_pitch.kP()*error_pitch;
-  int32_t target_rate_yaw = g.pi_stabilize_yaw.kP()*error_yaw + desired_yaw_rate_quaternion; // TODO: desired_yaw_rate_quaternion is in earth_frame, other term is in body_frame, is this a problem? // g.pi_stabilize_yaw.kP()*error equals g.pi_stabilize_yaw.get_p(error)!
+  int32_t target_rate_yaw = g.pi_stabilize_yaw.kP()*error_yaw; // + desired_yaw_rate_quaternion; // desired_yaw_rate_quaternion deleted for FFquad //  TODO(VertiKUL): desired_yaw_rate_quaternion is in earth_frame, other term is in body_frame, is this a problem? // g.pi_stabilize_yaw.kP()*error equals g.pi_stabilize_yaw.get_p(error)!
   
   // constrain the target rates
     if (!ap.disable_stab_rate_limit) {
@@ -571,21 +558,22 @@ get_pilot_desired_yaw(float stick_angle, int8_t yaw_lock_enabled)
     float target_rate = 0;
     // convert the input to the desired yaw rated
     if (control_mode==CRUISE){
-      stick_angle = stick_angle*g.cruise_turning;
+      //stick_angle = stick_angle*g.cruise_turning; // not for FFquad
       if (transition_to_cruise==true){stick_angle=0;}
       target_rate = 180/PI*stick_angle*g.cruise_speed*g.cruise_curvature*100;
-      //menno7 = stick_angle*1000;
-      //menno8 = target_rate;
+      menno2 = stick_angle*1000; // TODO: delete
+      menno3 = target_rate; // TODO: delete
       target_rate = constrain_float(target_rate,-1500,1500);
     }
     else{
     target_rate = stick_angle * g.acro_yaw_p;}
     
-    desired_yaw_rate_quaternion = target_rate;  // desired_yaw_rate_quaternion is used in get_stabilize_quaternion to add to the yaw error
+    // desired_yaw_rate_quaternion = target_rate;  // desired_yaw_rate_quaternion is used in get_stabilize_quaternion to add to the yaw error // NOT FOR FFQUAD
     
     // convert the input to the desired yaw rate
     control_yaw += target_rate * G_Dt;
     control_yaw = wrap_360_cd(control_yaw);
+    menno4 = control_yaw; // TODO: delete
 
     if (yaw_lock_enabled == 0) { // real yaw lock - this is put back because controller gets unstable with strong wind gusts // (15/05/2014-Menno)
     // calculate difference between desired heading and current heading // (01/04/2014-Menno) // ahrs.yaw_sensor cannot be used in quaternion control when in plane mode // uncomment this if you want real yaw lock - this is put back because controller gets unstable with strong wind gusts
@@ -597,6 +585,7 @@ get_pilot_desired_yaw(float stick_angle, int8_t yaw_lock_enabled)
     // update control_yaw to be within max_angle_overshoot of our current heading
     control_yaw = wrap_360_cd(angle_error + ahrs.yaw_sensor);
     }
+    menno5 = control_yaw; // TODO: delete
 
 }
 
@@ -1461,9 +1450,6 @@ get_cruise_pitch(int16_t target_rate)
         }
     }
 #endif
-
-//    menno7 = controller_desired_alt; // TODO: delete, for debugging only
-//    menno8 = current_loc.alt;
     
     // update target altitude for reporting purposes
     set_target_alt_for_reporting(controller_desired_alt);
@@ -1623,9 +1609,6 @@ get_throttle_rate_stabilized(int16_t target_rate)
         }
     }
 #endif
-
-//    menno7 = controller_desired_alt; // TODO: delete, for debugging only
-//    menno8 = current_loc.alt;
     
     // update target altitude for reporting purposes
     set_target_alt_for_reporting(controller_desired_alt);
